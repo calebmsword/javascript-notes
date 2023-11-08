@@ -154,46 +154,50 @@ class NumericOptional {
 
 // -------- examples
 
-console.log(NumericOptional
-  .of(1)
-  .add(2)
-  .unwrap());  // 3
+console.log(
+  NumericOptional
+    .of(1)
+    .add(2)
+    .unwrap());  // 3
 
-console.log(NumericOptional
-  .of(1)
-  .add(3)
-  .multipy(4)
-  .divide(1.25)
-  .unwrap());  // 12.8
+console.log(
+  NumericOptional
+    .of(1)
+    .add(3)
+    .multipy(4)
+    .divide(1.25)
+    .unwrap());  // 12.8
 
-console.log(NumericOptional
-  .of(null)
-  .add(3)
-  .multiply(4)
-  .divide(1.25)
-  .unwrap()); // null
+console.log(
+  NumericOptional
+    .of(null)
+    .add(3)
+    .multiply(4)
+    .divide(1.25)
+    .unwrap()); // null
 
-console.log(NumericOptional
-  .of(1000.0001)
-  .divide(0)
-  .unwrap());  // null
+console.log(
+  NumericOptional
+    .of(1000.0001)
+    .divide(0)
+    .unwrap());  // null
 
-console.log(NumericOptional
-  .of(1)
-  .add(3)
-  .multiply("4")
-  .unwrap());  // null 
+console.log(
+  NumericOptional
+    .of(1)
+    .add(3)
+    .multiply("4")
+    .unwrap());  // null 
 
-console.log(NumericOptional
-  .of(50)
-  .subtract(NaN)
-  .unwrap());  // null
+console.log(
+  NumericOptional
+    .of(50)
+    .subtract(NaN)
+    .unwrap());  // null
 
 const wun = NumericOptional.of(1);
 const too = NumericOptional.of(2);
-console.log(wun
-  .add(too)
-  .unwrap());  // 3
+console.log(wun.add(too).unwrap());  // 3
 ```
 
 Monads allow one to abstract away complicated operations into a declarative sequence of function calls. In the provided example, type checking is abstracted from the user. By utilizing `transform` to perform any operation on the wrapped number, type checking is guaranteed. (Note that `#typeCheckedOperation` is a higher-order function which creates a function that performs `transform` calls.) Also notice that the methods available from our monad are pure. The `#value` private variable is never altered by the class, so all "state changes" are represented by constructions of new `NumericalOptional`s. Predictable state management is another reason to adopt monads.
@@ -242,30 +246,35 @@ function numericOptionalOf(value) {
 
 // ----------- examples
 
-console.log(numericOptionalOf(1)
-  .add(3)
-  .multipy(4)
-  .divide(1.25)
-  .unwrap());  // 12.8
+console.log(
+  numericOptionalOf(1)
+    .add(3)
+    .multipy(4)
+    .divide(1.25)
+    .unwrap());  // 12.8
 
-console.log(numericOptionalOf(null)
-  .add(3)
-  .multiply(4)
-  .divide(1.25)
-  .unwrap()); // null
+console.log(
+  numericOptionalOf(null)
+    .add(3)
+    .multiply(4)
+    .divide(1.25)
+    .unwrap()); // null
 
-console.log(numericOptionalOf(1000.0001)
-  .divide(0)
-  .unwrap());  // null
+console.log(
+  numericOptionalOf(1000.0001)
+    .divide(0)
+    .unwrap());  // null
 
-console.log(numericOptionalOf(1)
-  .add(3)
-  .multiply("4")
-  .unwrap());  // null 
+console.log(
+  numericOptionalOf(1)
+    .add(3)
+    .multiply("4")
+    .unwrap());  // null 
 
-console.log(numericOptionalOf(50)
-  .subtract(NaN)
-  .unwrap());  // null
+console.log(
+  numericOptionalOf(50)
+    .subtract(NaN)
+    .unwrap());  // null
 
 const wun = numericOptionalOf(1);
 const too = numericOptionalOf(2);
