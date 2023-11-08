@@ -115,13 +115,17 @@ Okay, so monads are a data structure which contains some type and two associated
 ```javascript
 class NumericOptional {
   #value;
+  #allowConstructor = false;
   
   constructor(value) {
+    if (#allowConstructor === false) {
+      throw new Error("NumericOptional must be instantiated with NumericOptional.of");
+    }
     this.#value = value;
-    this.add = this.typeCheckedOperation((value, n) => value + n);
-    this.subtract = this.typeCheckedOperation((value, n) => value - n);
-    this.multiply = this.typeCheckedOperation((value, n) => value * n);
-    this.divide = this.typeCheckedOperation((value, n) => value / n);
+    this.add = this.#typeCheckedOperation((value, n) => value + n);
+    this.subtract = this.#typeCheckedOperation((value, n) => value - n);
+    this.multiply = this.#typeCheckedOperation((value, n) => value * n);
+    this.divide = this.#typeCheckedOperation((value, n) => value / n);
     Object.freeze(this);
   }
   
@@ -135,37 +139,21 @@ class NumericOptional {
     }
     return f(this.unwrap());
   }
+  
+  static of(value) {
+    this.#allowConstructor = true;
+    return new NumericOptional(value, opts);
+  }
+  
+  #isProperNumber(n) {
+    return typeof n === "number" && Math.abs(n) !== Infinity && !isNaN(n);
+  }
 
-  /**
-   * @example
-   * ```
-   * // in constructor for this class
-   *   constructor(value) {
-   *     // ...etc 
-   *     this.pow = this.typeCheckedOperation((value, n) => Math.pow(value, n));
-   *     // ...etc
-   *   }
-   * 
-   * // usage of the class
-   * const three = NumericalOptional.of(3);
-   * const four = NumericalOptional.of(4);
-   * console.log(three.pow(2).unwrap())  // 9
-   * console.log(three.pow(four).unwrap())  // 81
-   * ```
-   */
-  typeCheckedOperation(operation) {
+  #typeCheckedOperation(operation) {
     return n => 
       (n instanceof NumericOptional ? n : NumericOptional.of(n)).transform(n => 
         this.transform(value => 
           NumericOptional.of(operation(value, n))));
-  }
-  
-  static of(value) {
-    return new NumericOptional(value);
-  }
-
-  #isProperNumber(n) {
-    return typeof n === "number" && Math.abs(n) !== Infinity && !isNaN(n);
   }
 }
 
@@ -242,10 +230,9 @@ function numericOptionalOf(value) {
       return obj.unwrap === "function" && obj.transform === "function";
     }
     return n => 
-      numericOptionalOf(numericOptionalish(n) ? n.unwrap() : n)
-        .transform(n => 
-          transform(value => 
-            numericOptionalOf(operation(value, n))));
+      numericOptionalOf(numericOptionalish(n) ? n.unwrap() : n).transform(n => 
+        transform(value => 
+          numericOptionalOf(operation(value, n))));
   }
   
   return Object.freeze({
