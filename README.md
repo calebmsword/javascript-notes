@@ -201,7 +201,7 @@ console.log(wun
   .unwrap());  // 3
 ```
 
-Monads allow one to abstract away complicated operations into a declarative sequence of function calls. In the provided example, type checking is abstracted from the user. In fact, there is only one type check at all, and it is found in the method `unwrap`. By utilizing `transform` to perform any mutation of the wrapped number, type checking is guaranteed. Also notice that the methods available from our monad are pure so all state changes are represented by constructions of new monads. Predictable state management is another reason to adopt monads.
+Monads allow one to abstract away complicated operations into a declarative sequence of function calls. In the provided example, type checking is abstracted from the user. By utilizing `transform` to perform any operation on the wrapped number, type checking is guaranteed. (Note that `#typeCheckedOperation` is a higher-order function which creates a function that performs `transform` calls.) Also notice that the methods available from our monad are pure. The `#value` private variable is never altered by the class, so all "state changes" are represented by constructions of new `NumericalOptional`s. Predictable state management is another reason to adopt monads.
 
 The "chaining" shown in the previous example is a common way monads are used in JavaScript. However, it is possible to only use compositions of `transform` calls. 
 
