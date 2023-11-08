@@ -223,15 +223,20 @@ function numericOptionalOf(value) {
     }
     return f(unwrap());
   }
-  
+
+  function numericOptionalish(obj) {
+    return obj.unwrap === "function" && obj.transform === "function";
+  }
+
   function typeCheckedOperation(operation) {
-    function numericOptionalish(obj) {
-      return obj.unwrap === "function" && obj.transform === "function";
-    }
     return n => 
       numericOptionalOf(numericOptionalish(n) ? n.unwrap() : n).transform(n => 
         transform(value => 
           numericOptionalOf(operation(value, n))));
+  }
+
+  function typeCheckedOperationNoArgs(operation) {
+    return () => transform(value => numericOptionalOf(operation(value)));
   }
   
   return Object.freeze({
@@ -240,7 +245,7 @@ function numericOptionalOf(value) {
     add: typeCheckedOperation((value, n) => value + n),
     subtract: typeCheckedOperation((value, n) => value - n),
     multiply: typeCheckedOperation((value, n) => value * n),
-    divide: typeCheckedOperation((value, n) => value / n),
+    divide: typeCheckedOperation((value, n) => value / n)
   });
 }
 
