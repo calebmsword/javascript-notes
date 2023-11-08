@@ -137,24 +137,14 @@ class NumericOptional {
   }
 
   /**
-   * Returns a method which performs the provided operation on this instance.
-   * This is a higher-order function. The input function must take two 
-   * arguments: 1) the value wrapped by this container, 2) another number. The 
-   * provided function should return a new value for this container.
-   * The function which is returned should be assigned to a NumericOptional. 
-   * When called, the method will return a new NumericOptional based on the 
-   * operation provided. Type safety is guaranteed by this function. If the 
-   * current value or the provided value are not a "proper" number (NaN and 
-   * Infinity are not "proper"), then the returned NumericOptional will wrap a 
-   * null value.
    * @example
    * ```
    * // in constructor for this class
-   * constructor(value) {
-   *   // ...etc 
-   *   this.pow = this.#typeCheckedOperation((value, n) => Math.pow(value, n));
-   *   // ...etc
-   * }
+   *   constructor(value) {
+   *     // ...etc 
+   *     this.pow = this.typeCheckedOperation((value, n) => Math.pow(value, n));
+   *     // ...etc
+   *   }
    * 
    * // usage of the class
    * const three = NumericalOptional.of(3);
@@ -162,8 +152,6 @@ class NumericOptional {
    * console.log(three.pow(2).unwrap())  // 9
    * console.log(three.pow(four).unwrap())  // 81
    * ```
-   * @param {Function} operation
-   * @returns {Function}
    */
   typeCheckedOperation(operation) {
     return n => 
