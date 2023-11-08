@@ -115,12 +115,8 @@ Okay, so monads are a data structure which contains some type and two associated
 ```javascript
 class NumericOptional {
   #value;
-  #allowConstructor = false;
   
   constructor(value) {
-    if (#allowConstructor === false) {
-      throw new Error("NumericOptional must be instantiated with NumericOptional.of");
-    }
     this.#value = value;
     this.add = this.#typeCheckedOperation((value, n) => value + n);
     this.subtract = this.#typeCheckedOperation((value, n) => value - n);
@@ -141,8 +137,7 @@ class NumericOptional {
   }
   
   static of(value) {
-    this.#allowConstructor = true;
-    return new NumericOptional(value, opts);
+    return new NumericOptional(value);
   }
   
   #isProperNumber(n) {
