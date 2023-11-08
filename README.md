@@ -167,11 +167,9 @@ class NumericOptional {
    */
   typeCheckedOperation(operation) {
     return n => 
-      (n instanceof NumericOptional ? n : NumericOptional.of(n))
-        .transform(n => 
-          this.transform(value => 
-            NumericOptional.of(operation(value, n))));
-    }
+      (n instanceof NumericOptional ? n : NumericOptional.of(n)).transform(n => 
+        this.transform(value => 
+          NumericOptional.of(operation(value, n))));
   }
   
   static of(value) {
