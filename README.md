@@ -33,29 +33,28 @@ for (const property of iterable) console.log(property);  // logs 'hello' and 'wo
 The object returned by `Iterable[Symbol.iterator]()` is said to conform to the "iterator protocol". The requirements for the protocol are actually less strict that what you would expect, and there are few optional things I did not mention here. See [MDN's documentation](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols) on the iterator protocol for the complete details.
 
 ### Monads
-A monad consists of three parts. The first is a data structure which wraps a type such as Lists or Optionals. We will call this data structure the "wrapper" associated with the monad. The other two parts are functions which which we will call `wrap` and `transform`.
+A monad consists of three parts. The first is a data structure which cpntains a type such as Lists or Optionals. We will call this data structure the "container" associated with the monad. The other two parts are functions which which we will call `wrap` and `transform`.
 
 Let there data types X and Y, where X and Y can be the same. `wrap` and `transform` must have the following signatures:
  1) `wrap`
        - takes an X
-       - returns an X-wrapper
+       - returns an X-container
  2) `transform`
       - takes an X-wrapper
       - takes a function
          - which takes an X
-         - and returns a Y-wrapper
-      - returns a Y-wrapper
+         - and returns a Y-container
+      - returns a Y-container
 
-(Note: The names "wrap" and "transform" are unconventional. In most literature which describes monads, "wrap" is referred to as "return" or "unit", while "transform" is called "bind". The names I provided here are names I made up that makes sense for me.)
+(Note: The names "container", "wrap" and "transform" are unique to these notes. In most literature which describes monads, "wrap" is referred to as "return" or "unit" while "transform" is called "bind".)
 
-Let `wx` be an X-wrapper and let `x` be some X. Let `f` and `g` be functions which can be passed to transform. `wrap` and `transform` must satisfy three constraints:
+Let `wx` be an X-container and let `x` be some X. Let `f` and `g` be functions which can be passed to transform. `wrap` and `transform` must satisfy the "monad laws":
 
  1) `transform(wx, wrap) == wrap(x)`
  2) `transform(wrap(x), f) == f(x)`
- 3) `transform(wx, x => transform(f(x), g))` `==`
-     `transform(transform(wx, f), g)`
+ 3) `transform(wx, x => transform(f(x), g)) == transform(transform(wx, f), g)`
 
-JavaScript arrays are monadic wrappers when `wrap` and `transform` are defined as
+JavaScript arrays are monadic containers when `wrap` and `transform` are defined as
 
 ```javascript
 function wrap(x) {
@@ -79,7 +78,7 @@ function transform(wx, f) {
 }
 ```
 
-Let us implement an Optional monad in JavaScript. We will represent the Optional wrapper as an immutable object with a single "getter" method.
+Let us implement an Optional monad in JavaScript. We will represent the Optional container as an immutable object with a single "getter" method.
 
 ```javascript
 function wrap(x) {
@@ -110,7 +109,7 @@ console.log(transform(wrapper01, transformer).unwrap());  // "cheesecheese"
 console.log(transform(wrapper02, transformer).unwrap());  // null
 ```
 
-Okay, so monads are a data structure which contains some type and two associated functions `wrap` and `transform`. But when programmers use a monad in JavaScript, one rarely uses the `wrap` and `transform` methods directly. Typically, the designer of the monad will create a single object with convenience methods which compose wrap and transform in useful ways. Let us see how we can do this with an Optional for numeric types. We will represent this monad as a class which contains methods for performing various arithmetic operations on our wrapped number.
+Okay, so monads are a data structure which contains some type and has two functions `wrap` and `transform` which adhere to the "monad laws". But when programmers use a monad in JavaScript, one rarely uses the `wrap` and `transform` methods directly. Typically, the designer of the monad will create a single object with convenience methods which compose wrap and transform in useful ways. Let us see how we can do this with an Optional for numeric types. We will represent this monad as a class which contains methods for performing various arithmetic operations on our contained number.
 
 ```javascript
 class NumericOptional {
