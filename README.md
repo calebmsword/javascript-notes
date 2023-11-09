@@ -136,7 +136,7 @@ class NumericOptional {
     }
     return f(this.unwrap());
   }
-  
+
   static of(value) {
     return new NumericOptional(value);
   }
