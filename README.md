@@ -316,7 +316,7 @@ function createConstructorFunction() {
     
     // don't allow people to call constructors without `new`
     if (this === undefined) {
-      throw new TypeError(`Class constructor ${UnsweetenedClass.name} cannot be invoked without 'new'`);
+      throw new TypeError(`Class constructor ${NameOfClass.name} cannot be invoked without 'new'`);
     }
 
     const result = constructorFromClass.apply(this, argsFromConstructor);
