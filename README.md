@@ -72,7 +72,7 @@ function wrap(x) {
 function transform(wx, f) {
   const wy = [];
   wx.forEach(x => {
-    f(x).forEach(wy.push));
+    f(x).forEach(y => wy.push(y)));
   }
   return wy;
 }
