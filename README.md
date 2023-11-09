@@ -128,7 +128,9 @@ class NumericOptional {
   unwrap() {
     return this.#isProperNumber(this.#value) ? this.#value : null;
   }
-  
+
+  // Isn't transform supposed to take two arguments (wx, f)?
+  // Recall that methods are implicitly passed `this` as an argument
   transform(f) {
     if (this.unwrap() === null) {
       return NumericOptional.of(null);
