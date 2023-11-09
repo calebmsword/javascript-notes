@@ -109,7 +109,7 @@ console.log(transform(wrapper01, transformer).unwrap());  // "cheesecheese"
 console.log(transform(wrapper02, transformer).unwrap());  // null
 ```
 
-Okay, so monads are a data structure which contains some type and has two functions `wrap` and `transform` which adhere to the "monad laws". But when programmers use a monad in JavaScript, one rarely uses the `wrap` and `transform` methods directly. Typically, the designer of the monad will create a single object with convenience methods which compose wrap and transform in useful ways. Let us see how we can do this with an Optional for numeric types. We will represent this monad as a class which contains methods for performing various arithmetic operations on our contained number.
+Okay, so monads are a data structure which contains some type and has two functions `wrap` and `transform` which adhere to the "monad laws". But when programmers use a monad in JavaScript, one rarely uses the `wrap` and `transform` methods directly. Typically, the designer of the monad will create a single object with convenience methods which compose wrap and transform in useful ways. Let us see how we can do this with an Optional for numeric types. We will represent this monad as a class which contains methods for performing various arithmetic operations on our contained number. We'll let the constructor of the method act as the `wrap` function and a `transform` method to the class. 
 
 ```javascript
 class NumericOptional {
