@@ -202,7 +202,7 @@ console.log(wun.add(too).unwrap());  // 3
 
 Monads allow one to abstract away complicated operations into a declarative sequence of function calls. In the provided example, type checking is abstracted from the user. By utilizing `transform` to perform any operation on the wrapped number, type checking is guaranteed. (Note that `#typeCheckedOperation` is a higher-order function which creates a function that performs `transform` calls.) Also notice that the methods available from our monad are pure. The `#value` private variable is never altered by the class, so all "state changes" are represented by constructions of new `NumericalOptional`s. Predictable state management is another reason to adopt monads.
 
-The "chaining" shown in the previous example is a common way monads are used in JavaScript. However, it is possible to only use compositions of `transform` calls. 
+The "chaining" shown in the previous example is a common way monads are used in JavaScript. But it should be noted that the `add`, `subtract`, `multiply`, and `divide` methods are just shorthands for compositions of `transform` calls. If you wanted to, all practical usage of a monad can be performed through explicit compositions of `transform` calls.
 
 As an exercise, I will also show an implementation of this monad using "this-less" JavaScript. This is the style recommended by Douglas Crockford in "How JavaScript Works".
 
