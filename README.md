@@ -319,12 +319,9 @@ function createConstructorFunction() {
       throw new TypeError(`Class constructor ${NameOfClass.name} cannot be invoked without 'new'`);
     }
 
-    // it's actually more likely that the commands specified in the `constructor` method are copy-pasted here during transpilation
-    // but this would work too
-    const result = constructorFromClass.apply(this, argsFromConstructor);
-    if (typeof result === "object") {
-      return result;
-    }
+    /*
+    Everything from the `constructor` method in the class body is (probably) copy-pasted here verbatim
+    */
   }
 
   // a class can extend null; if no extend is specified, then the prototype is Object.prototype
@@ -339,6 +336,12 @@ function createConstructorFunction() {
   // staticProps are assigned to the constructor function
   for (const [staticProp, valueOrMethod] of Object.entries(staticsFromClass)) {
     NameOfClass[staticProp] = valueOrMethod;
+  }
+
+  // suppose that all code in a static block is transpiled into methods stored in the array `staticBlocks`
+  for (const staticBlock of staticBlocks) {
+    // make `this` refer to constructor function in all static blocks
+    staticBlock.apply(NameOfClass);
   }
 
   return NameOfClass;
