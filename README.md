@@ -309,7 +309,7 @@ function createConstructorFunction() {
   }
 
   // similarly, any `this.#privateVariable` call is likely transpiled into a privateVariable reference (no `this`)
-  let privateVariable /* = value from class if provided */
+  let privateVariable /* = value from class if provided */;
 
   // this function would have the name of the class
   const NameOfClass = function(...argsFromConstructor) {
