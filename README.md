@@ -319,6 +319,8 @@ function createConstructorFunction() {
       throw new TypeError(`Class constructor ${NameOfClass.name} cannot be invoked without 'new'`);
     }
 
+    // it's actually more likely that the commands specified in the `constructor` method are copy-pasted here during transpilation
+    // but this would work too
     const result = constructorFromClass.apply(this, argsFromConstructor);
     if (typeof result === "object") {
       return result;
