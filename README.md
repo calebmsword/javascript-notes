@@ -326,7 +326,8 @@ function createConstructorFunction() {
   }
 
   // a class can extend null; if no extend is specified, then the prototype is Object.prototype
-  NameOfClass.prototype = ClassToExtend ? ClassToExtend.prototype || null : Object.prototype;
+  Class.prototype = Object.create(
+    ClassToExtend !== undefined ? ClassToExtend.prototype : Object.prototype);
 
   // methodsFromClass won't include private methods
   for (const [methodName, method] of Object.entries(methodsFromClass)) {
