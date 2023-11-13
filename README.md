@@ -290,7 +290,7 @@ console.log(wun.add(too).unwrap());  // 3
 
 ### What ES6 classes are sugar for
 
-A class is syntatic sugar for a [constructor function](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/new#description).
+You get a 95% accurate understanding of ES6 classes by thinking of them as syntatic sugar for a [constructor function](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/new#description).
  - static fields are attached to the constructor
    - (non-static methods can still access them with `this.constructor[staticPropertyName]` lmao)
  - A GUESS, NOT CONFIRMED:
@@ -347,3 +347,5 @@ function createConstructorFunction() {
   return NameOfClass;
 }
 ```
+
+I should mention that this mental model isn't completely accurate. See, for example, [this](https://stackoverflow.com/a/54861781/22334683) stackexchange post (unfortunately, this was written before private variables were introduced).
