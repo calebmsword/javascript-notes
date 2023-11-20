@@ -66,7 +66,7 @@ function run(generator, ...args) {
         return Promise.resolve(iterObj.value)
           .then(stepThroughGenerator)
           .catch(error => {
-            iterator.throw(error)
+            Promise.resolve(iterator.throw(error))
               .then(handleIterObj)
           });
       }
