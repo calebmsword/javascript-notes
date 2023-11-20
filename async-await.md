@@ -4,7 +4,7 @@ Consider the following:
 
 ```javascript
 function getAles() {
-  return fetch(https://api.sampleapis.com/beers/ale);
+  return fetch("https://api.sampleapis.com/beers/ale");
 }
 
 async function showFirstAle() {
