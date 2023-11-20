@@ -27,7 +27,7 @@ This function is fully equivalent to a generator function, given that we create 
 
 ```javascript
 function getAles() {
-  return fetch(https://api.sampleapis.com/beers/ale);
+  return fetch("https://api.sampleapis.com/beers/ale");
 }
 
 function* showFirstAle() {
