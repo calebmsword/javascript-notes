@@ -58,7 +58,8 @@ We will implement this so that every yielded value is processed asynchronously a
 function run(generator, ...args) {
   const iterator = generator(args);
 
-  return (function handleIterObj(iterObj) {
+  // let "iterObj" be the thing returned by iterator.next() or iterator.throw()
+  function handleIterObj(iterObj) {
     try {
       if (iterObj.done) {
         return Promise.resolve(iterObj.value);
@@ -71,7 +72,9 @@ function run(generator, ...args) {
     catch(error) {
       return Promise.reject(error);
     }
-  })(iterator.next());
+  }
+
+  return handleIterObj(iterator.next());
 }
 ```
 
