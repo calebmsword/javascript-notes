@@ -35,9 +35,11 @@ function* showFirstAle() {
     const res = yield getAles();
     const json = yield res.json();
     console.log(json[0]);
+    return "success";
   }
   catch(error) {
     console.log(error);
+    return "failure";
   }
 }
 
