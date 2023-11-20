@@ -4,6 +4,7 @@ Consider the following:
 
 ```javascript
 function getAles() {
+  // this is an actual free, public API
   return fetch("https://api.sampleapis.com/beers/ale");
 }
 
@@ -27,6 +28,7 @@ This function is fully equivalent to a generator function given that we create a
 
 ```javascript
 function getAles() {
+  // this is an actual free, public API
   return fetch("https://api.sampleapis.com/beers/ale");
 }
 
@@ -48,7 +50,7 @@ run(showFirstAle).then(console.log);  // "success"
 
 The `async` function is now a generator function. All `await`s are replaced with `yield`s. And instead of calling the generator function, we pass it to `run` which magically uses the generator function in some way.
 
-Before showing an implementation of `run`, let's think about what `run` must do. Generators are a mechanism which allows for two-way messaging. `run` can take advantage of this by treating every value yielded by the generator as a Promise. Every yielded value will then be attached a `.then` so it can be processed asynchronously. In `then`, the resolved value will be passed back to the generator. Then the process repeats until the iterator has accessed every value that can be retrieved. Also, if the generator ever yields a rejected promise, we will choose to pass the rejected value to the generator as an error (by using `iterator.throw([rejectedValue])`.
+Before showing an implementation of `run`, let's think about what `run` must do. Generators are a mechanism which allows for two-way messaging. `run` can take advantage of this by treating every value yielded by the generator as a Promise. Every yielded value will then be attached a `.then` so it can be processed asynchronously. In `then`, the resolved value will be passed back to the generator. Then the process repeats until the iterator has accessed every value that can be retrieved. Also, if the generator ever yields a rejected promise, we will choose to pass the rejected value to the generator as an error (by using `iterator.throw([rejectedValue])`).
 
 We will implement this so that every yielded value is processed asynchronously after the previous. Here is a relatively straightforward implementation of `run`:
 
@@ -79,11 +81,15 @@ Note that `run` returns a Promise. If the generator passed to `run` returns a va
 async function success() {
   return "success";
 }
+success().then(console.log);  // "success"
 
-async function failure() {
+async function failure01() {
   throw new Error("failure");
 }
+failure01().catch(e => console.log(e.message));  // "failure"
 
-success().then(console.log);  // "success"
-failure().catch(e => console.log(e.message));  // "failure"
+async function failure02() {
+  return Promise.reject("failure");
+}
+failure02().catch(console.log);  // "failure"
 ```
