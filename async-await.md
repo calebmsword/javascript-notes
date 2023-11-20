@@ -52,7 +52,7 @@ The `async` function is now a generator function. All `await`s are replaced with
 
 Before showing an implementation of `run`, let's think about what `run` must do. Generators are a mechanism which allows for two-way messaging. `run` can take advantage of this by treating every value yielded by the generator as a Promise. Every yielded value will then be attached a `.then` so it can be processed asynchronously. In `then`, the resolved value will be passed back to the generator. Then the process repeats until the iterator has accessed every value that can be retrieved. Also, if the generator ever yields a rejected promise, we will choose to pass the rejected value to the generator as an error (by using `iterator.throw([rejectedValue])`).
 
-We will implement this so that every yielded value is processed asynchronously after the previous. Here is a relatively straightforward implementation of `run`:
+We will implement this so that every yielded value is processed asynchronously after the previous. Here is a potential implementation of `run`:
 
 ```javascript
 function run(generator, ...args) {
