@@ -28,10 +28,38 @@ console.log(getUniqueId());  // 2
 console.log(getUniqueId());  // 3
 ```
 
-The control flow of generators is reminiscent of goto-label syntax, which is never a good thing. This alone makes it hard to recommend them.
-
-What I wish people would advocate is how generators allow for *two-way message passing*. Suppose we have a `generator` and then we do `const iterator = generator()`:
+A feature of generators that is not often discussed is that they allow for *two-way message passing*. Suppose we have a `generator` and then we do `const iterator = generator()`:
 
  - `iterator.next(value)` sends information in two ways. The return value is an object containing the value yielded from the `generator`. Meanwhile, `value` is passed to `generator` and replaces the most recent `yield <expression>` (or is ignored if no `yield` was reach yet).
 
-I am not sure this a good enough reason to justify using generators, but it is the only one that I find convincing.
+Of course, we could accomplish something like this without generators:
+
+```javascript
+const DONE = Symbol("done");
+
+function taskGenerator() {
+  let currentStep = 0;
+
+  const tasks = [
+    func1,
+    func2,
+    func3,
+    // etc
+  ];
+
+  return (message) => {
+    if (index >= tasks.length) return DONE;
+    
+    const func = tasks[currentStep++];
+    return func(message);
+  }
+}
+
+const doNextTask = taskGenerator();
+
+for(let doNextTask = taskGenerator(), prevReturn;
+    prevReturn !== DONE;
+    prevReturn = doNextTask(prevReturn)) {}
+```
+
+...to be continued
