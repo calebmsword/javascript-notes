@@ -13,7 +13,7 @@ console.log(uniqueIdIterator.next().value);  // 2
 console.log(uniqueIdIterator.next().value);  // 3
 ```
 
-But this is a bad example because closures solve this problem without introducing the mystical control flow generators require.
+But this is a bad example because closures solve this problem without introducing the mystical control flow inherent to generators.
 
 ```javascript
 function getUniqueIdFactory() {
@@ -63,7 +63,7 @@ while (prevReturn !== DONE) {
 }
 ```
 
-I think the hardest thing to emulate with how one can "throw errors" into iterators made by generators.
+I think the hardest thing to emulate is how one can "throw errors" into generators:
 
 ```javascript
 function* myGenerator() {
