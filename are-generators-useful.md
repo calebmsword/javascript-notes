@@ -75,7 +75,7 @@ console.log(doNextTask());  // "American"
 doNextTask("gruyere");  // "gruyere"
 ```
 
-So, two-way message passing is not something generators make possible. *Maybe* you could argue that they make it more ergonomic.
+So, two-way message passing is not something generators make possible. Although perhaps some may find that generators make it more ergonomic.
 
 Now, there is one behavior of generators that I think is difficult to emulate purely with functions: how one can "throw errors" into generators:
 
@@ -103,6 +103,6 @@ iterator.throw(new Error("oops!"));
 // "oops!"
 ```
 
-If, for some reason, this pattern suits your needs, then generators are probably your best bet.
+Most polyfills for generators implement a state machine with `switch` statements to emulate this behavior. The state of the polyfilled generator is represented as a number. When you call `next` or `throw`, the generator checks the current state and determines the next number it should be based on whether `next` or `throw` was called. Each case in the switch statement then executes some behavior, possibly updates the current state, and then returns an object with `value` and `done` keys.
 
-Most polyfills for generators use `switch` statements to emulate this behavior. The state of the polyfilled generator is represented as a number, and the switch statement is on this number. When you call `next` or `throw`, the generator checks the current state and determines the next number it should be based on whether `next` or `throw` was called. Each case in the switch statement then executes some behavior and then returns an object with `value` and `done` keys. Clearly, generators are much more ergonomic and easy to read here.
+Clearly, generators are more ergonomic here.
