@@ -13,7 +13,7 @@ console.log(uniqueIdIterator.next().value);  // 2
 console.log(uniqueIdIterator.next().value);  // 3
 ```
 
-But this is a bad example because closures solve this problem without introducing the mystical control flow inherent to generators.
+But this is a bad example because thunks solve this problem without introducing the mystical control flow inherent to generators.
 
 ```javascript
 function getUniqueIdFactory() {
@@ -28,42 +28,56 @@ console.log(getUniqueId());  // 2
 console.log(getUniqueId());  // 3
 ```
 
-Another reason you might advocate for generators that is they they allow for *two-way message passing*. Suppose we have a `generator` and then we do `const iterator = generator()`. The function call `iterator.next(value)` sends information in two ways. The return value is an object containing the value yielded from the `generator`. Meanwhile, `value` is passed to `generator` and replaces the most recent `yield <expression>` (or is ignored if no `yield` was reach yet).
+Another reason you might advocate for generators that is they they allow for *two-way message passing*. Suppose we have a `generator` and then we do `const iterator = generator()`. The function call `iterator.next(value)` sends information in two ways. The return value is an object containing the value yielded from the `generator`. Meanwhile, `value` is passed to `generator` and replaces the most recent `yield <expression>` (or is ignored if it was the first call of `iterator.next`).
 
-But I don't think this is convincing either because we could accomplish something like this without generators:
+This is where I start to think that generators are more interesting. However, it should be understood that this is not anything new. For example, we could create the utility
 
 ```javascript
 const DONE = Symbol("done");
 
-function taskGenerator() {
-  let currentStep = 0;
-
-  const tasks = [
-    func1,
-    func2,
-    func3,
-    // etc
-  ];
+function taskGenerator(...tasks) {
+  let currentTask = 0;
 
   return (message) => {
-    if (currentStep >= tasks.length) return DONE;
+    if (currentTask >= tasks.length) return DONE;
     
-    const func = tasks[currentStep++];
+    const func = tasks[currentTask++];
     return func(message);
   }
 }
-
-const doNextTask = taskGenerator();
-
-let prevReturn;
-while (prevReturn !== DONE) {
-  let message;
-  // do something with prevReturn and maybe assign something to message
-  prevReturn = doNextTask(message);
-}
 ```
 
-I think the hardest thing to emulate is how one can "throw errors" into generators:
+Here is a simple example where an ES6 generator and `taskGenerator` are fully equivalent:
+
+```javascript
+
+// ------ With ES6 generator
+function* generator() {
+  const cheese = yield "American";
+  console.log(cheese);
+}
+
+const iterator = generator();
+
+console.log(iterator.next().value);  // "American"
+iterator.next("gruyere");  // "gruyere"
+
+
+// ------ With taskGenerator
+
+const doNextTask = taskGenerator(() = > {
+  return "American";
+}, (cheeseMessage) => {
+  console.log(cheeseMessage);
+});
+
+console.log(doNextTask());  // "American"
+doNextTask("gruyere");  // "gruyere"
+```
+
+So, two-way message passing is not something generators make possible. *Maybe* you could argue that they make it more ergonomic.
+
+Now, there is one behavior of generators that I think is difficult to emulate purely with functions: how one can "throw errors" into generators:
 
 ```javascript
 function* myGenerator() {
@@ -80,7 +94,7 @@ function* myGenerator() {
 
 const iterator = myGenerator();
 
-console.log(iterator.next());
+console.log(iterator.next().value);
 // "gruyere"
 console.log(iterator.next("parmesean");
 // "cheese is:" "parmesean"
@@ -89,4 +103,6 @@ iterator.throw(new Error("oops!"));
 // "oops!"
 ```
 
-If, for some reason, this pattern suits your needs, then generators are probably preferable to closures for this problem (you still could implement equivalent behavior without generators if you were clever enough).
+If, for some reason, this pattern suits your needs, then generators are probably your best bet.
+
+Most polyfills for generators use `switch` statements to emulate this behavior. The state of the polyfilled generator is represented as a number, and the switch statement is on this number. When you call `next` or `throw`, the generator checks the current state and determines the next number it should be based on whether `next` or `throw` was called. Each case in the switch statement then executes some behavior and then returns an object with `value` and `done` keys. Clearly, generators are much more ergonomic and easy to read here.
