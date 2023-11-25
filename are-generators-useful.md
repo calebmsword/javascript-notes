@@ -127,4 +127,4 @@ for (const n of itegerGenerator()) console.log(n);
 
 Before `async-await` syntax was introduced into JavaScript, people emulated it using generators. See my notes titled "async-await is just generator function magic".
 
-There is a [proposal](https://github.com/tc39/proposal-iterator-helpers) to helper methods for iterators that are similar to array methods found in `Array.prototype`. This proposal is in "stage 3" which is the final stage meaning that it is very likely it will be introduced into the language soon. I think these methods will make generators a lot more ergonomic, although it wouldn't be difficult to implement these helper methods in your own personal utility in the meantime.
+There is a [proposal](https://github.com/tc39/proposal-iterator-helpers) for helper methods for iterators that are similar to array methods found in `Array.prototype`. This proposal is in "stage 3" which is the final stage meaning that it is very likely it will be introduced into the language soon. I think these methods will make generators a lot more ergonomic, although it wouldn't be difficult to implement these helper methods in your own personal utility in the meantime.
