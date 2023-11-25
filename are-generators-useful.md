@@ -67,10 +67,12 @@ iterator.next("gruyere");  // "gruyere"
 
 // ------ With taskGenerator
 
-const doNextTask = taskGenerator(() = > {
-  return "American";
-}, message => {
-  console.log(message);
+const doNextTask = taskGenerator(
+  () = > {
+    return "American";
+  },
+  message => {
+    console.log(message);
 });
 
 console.log(doNextTask());  // "American"
