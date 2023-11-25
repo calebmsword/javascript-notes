@@ -61,9 +61,7 @@ function run(generator, ...args) {
   // let "iterObj" be the thing returned by iterator.next() or iterator.throw()
   function handleIterObj(iterObj) {
     try {
-      if (iterObj.done) {
-        return Promise.resolve(iterObj.value);
-      }
+      if (iterObj.done) return Promise.resolve(iterObj.value);
 
       return Promise.resolve(iterObj.value)
         .then(value => handleIterObj(iterator.next(value)))
