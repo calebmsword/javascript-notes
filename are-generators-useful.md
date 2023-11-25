@@ -66,14 +66,10 @@ iterator.next("gruyere");  // "gruyere"
 
 
 // ------ With taskGenerator
-
 const doNextTask = taskGenerator(
-  () = > {
-    return "American";
-  },
-  message => {
-    console.log(message);
-});
+  () => "American",
+  console.log
+);
 
 console.log(doNextTask());  // "American"
 doNextTask("gruyere");  // "gruyere"
@@ -111,6 +107,8 @@ Most polyfills for generators implement a state machine with `switch` statements
 
 So, while this behavior is strictly possible, it starts to get complicated to emulate with traditional JavaScript functions. If you find a good use case for `try catch` patterns in a generator, it's probably best done with a generator.
 
+You should know that that the iterators returned by generators also have a `return` method. See [MDN's documentation](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Generator/return) on the topic.
+
 ### Don't use the iterator directly
 
 In general, I think generators make the most sense when you abstract away direct usage of the iterator. For example, you can pass iterators into `for of` loops.
@@ -121,12 +119,39 @@ function* integerGenerator() {
   while (i < 3) yield i++;
 }
 
-for (const n of itegerGenerator()) console.log(n);
+for (const n of integerGenerator()) console.log(n);
 // 0
 // 1
 // 2
 ```
 
-Before `async-await` syntax was introduced into JavaScript, people emulated it using generators. See my notes titled "async-await is just generator function magic".
+Also, when you need to get a sequence of values that are each "processed" in a certain way, generators are well-suited to the process. Yield the value to be processed, process it, and then pass it back to the generator with the iterator. Before `async-await` syntax was introduced into JavaScript, people used very similar syntax using generators. See my notes on async-await (async-await.md). It is a great example of how one can use a utility to abstract away usage of an iterator.
 
-There is a [proposal](https://github.com/tc39/proposal-iterator-helpers) for helper methods for iterators that are similar to array methods found in `Array.prototype`. This proposal is in "stage 3" which is the final stage meaning that it is very likely it will be introduced into the language soon. I think these methods will make generators a lot more ergonomic, although it wouldn't be difficult to implement these helper methods in your own personal utility in the meantime.
+There is a [proposal](https://github.com/tc39/proposal-iterator-helpers) for helper methods for iterators that are similar to array methods found in `Array.prototype`. This proposal is in "stage 3" which is the final stage meaning that it is very likely it will be introduced into the language soon. I think these methods will make generators practical, although it wouldn't be difficult to implement these helper methods in your own personal utility in the meantime. For example, a mapper could be implemented with 
+
+```javascript
+function map(iterator, mapper) {
+  return (function* () {
+    let { value, done } = iterator.next();
+    yield value;
+    while (!done) {
+      ({ value, done } = iterator.next());
+      yield mapper(value);
+    }
+  })();
+}
+
+function* naturals(limit) {
+  let i = 0;
+  while (i < limit) yield i++;
+}
+
+const mapped = map(naturals(10),  x => x * x);
+
+for (const n of mapped) console.log(n);
+```
+
+### In conclusion
+I don't think you need to use generators. They don't add anything new. Their syntax is strange and their control flow can be hard to follow. 
+
+But I also don't think it is bad to use generators. I think they are best used when you abstract away direct usage of the iterator. Use a `for ... of` loop, wait for iterator helpers to be introduced to JavaScript, or implement some utility which processes the iterator for you.
