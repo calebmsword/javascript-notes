@@ -1,4 +1,6 @@
-Many examples I see advocating for ES6 generators include something like the following:
+I find it difficult to motivate ES6 generators because they don't add anything new. Instead, they make some things more ergonomic than they used to be.
+
+For example, many examples I see advocating for ES6 generators suggest something like the following:
 
 ```javascript
 function uniqueIdGenerator() {
@@ -13,7 +15,7 @@ console.log(uniqueIdIterator.next().value);  // 2
 console.log(uniqueIdIterator.next().value);  // 3
 ```
 
-But this is a bad example because thunks solve this problem without introducing the mystical control flow inherent to generators.
+To me, this isn't a very compelling example because thunks already can create simple iterators.
 
 ```javascript
 function getUniqueIdFactory() {
@@ -67,8 +69,8 @@ iterator.next("gruyere");  // "gruyere"
 
 const doNextTask = taskGenerator(() = > {
   return "American";
-}, (cheeseMessage) => {
-  console.log(cheeseMessage);
+}, message => {
+  console.log(message);
 });
 
 console.log(doNextTask());  // "American"
@@ -105,4 +107,24 @@ iterator.throw(new Error("oops!"));
 
 Most polyfills for generators implement a state machine with `switch` statements to emulate this behavior. The state of the polyfilled generator is represented as a number. When you call `next` or `throw`, the generator checks the current state and determines the next number it should be based on whether `next` or `throw` was called. Each case in the switch statement then executes some behavior, possibly updates the current state, and then returns an object with `value` and `done` keys.
 
-Clearly, generators are more ergonomic here.
+So, while this behavior is strictly possible, it starts to get complicated to emulate with traditional JavaScript functions. If you find a good use case for `try catch` patterns in a generator, it's probably best done with a generator.
+
+### Don't use the iterator directly
+
+In general, I think generators make the most sense when you abstract away direct usage of the iterator. For example, you can pass iterators into `for of` loops.
+
+```javascript
+function* integerGenerator() {
+  let i = 0;
+  while (i < 3) yield i++;
+}
+
+for (const n of itegerGenerator()) console.log(n);
+// 0
+// 1
+// 2
+```
+
+Before `async-await` syntax was introduced into JavaScript, people emulated it using generators. See my notes titled "async-await is just generator function magic".
+
+There is a [proposal](https://github.com/tc39/proposal-iterator-helpers) to helper methods for iterators that are similar to array methods found in `Array.prototype`. This proposal is in "stage 3" which is the final stage meaning that it is very likely it will be introduced into the language soon. I think these methods will make generators a lot more ergonomic, although it wouldn't be difficult to implement these helper methods in your own personal utility in the meantime.
