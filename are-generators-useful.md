@@ -1,4 +1,4 @@
-I find it difficult to motivate ES6 generators because they don't add anything new. Instead, they make some things more ergonomic than they used to be.
+I find it difficult to motivate ES6 generators because they don't add anything new. Instead, they were designed make some things more ergonomic than they used to be.
 
 For example, many examples I see advocating for ES6 generators suggest something like the following:
 
@@ -75,9 +75,9 @@ console.log(doNextTask());  // "American"
 doNextTask("gruyere");  // "gruyere"
 ```
 
-So, two-way message passing is not something generators make possible. Although perhaps some may find that generators make it more ergonomic.
+So, two-way message passing is already possible without generators. But some programmers may find their use more ergonomic for this case.
 
-Now, there is one behavior of generators that I think is difficult to emulate purely with functions: how one can "throw errors" into generators:
+Now, there is one behavior of generators that is difficult to emulate purely with functions: how one can "throw errors" into generators:
 
 ```javascript
 function* myGenerator() {
@@ -107,11 +107,11 @@ Most polyfills for generators implement a state machine with `switch` statements
 
 So, while this behavior is strictly possible, it starts to get complicated to emulate with traditional JavaScript functions. If you find a good use case for `try catch` patterns in a generator, it's probably best done with a generator.
 
-You should know that that the iterators returned by generators also have a `return` method. See [MDN's documentation](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Generator/return) on the topic.
+You should know that that the iterators returned by generators also have a `return` method. See [MDN's documentation](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Generator/return) on the topic. The state machine approach can also polyfill this feature.
 
 ### Don't use the iterator directly
 
-In general, I think generators make the most sense when you abstract away direct usage of the iterator. For example, you can pass iterators into `for of` loops.
+In general, I think generators make the most sense when you abstract away direct usage of the iterator. For example, you can pass iterators into `for of` loops. An as impractically simple example for the sake of introducing syntax, we will show thus using a numeric iterator.
 
 ```javascript
 function* integerGenerator() {
@@ -125,9 +125,9 @@ for (const n of integerGenerator()) console.log(n);
 // 2
 ```
 
-Also, when you need to get a sequence of values that are each "processed" in a certain way, generators are well-suited to the process. Yield the value to be processed, process it, and then pass it back to the generator with the iterator. Before `async-await` syntax was introduced into JavaScript, people used very similar syntax using generators. See my notes on async-await (async-await.md). It is a great example of how one can use a utility to abstract away usage of an iterator.
+Also, when you need to get a sequence of values that are each "processed" in a certain way, generators are well-suited to the process. Yield the value to be processed, process it, and then pass it back to the generator with the iterator. Before `async-await` syntax was introduced into JavaScript, people used very similar syntax using generators. They would yield a Promise and call `iterator.next` with the resolved value in a `then` attached to the Promise. See my notes on async-await (async-await.md) for an example.
 
-There is a [proposal](https://github.com/tc39/proposal-iterator-helpers) for helper methods for iterators that are similar to array methods found in `Array.prototype`. This proposal is in "stage 3" which is the final stage meaning that it is very likely it will be introduced into the language soon. I think these methods will make generators practical, although it wouldn't be difficult to implement these helper methods in your own personal utility in the meantime. For example, a mapper could be implemented with 
+There is a [proposal](https://github.com/tc39/proposal-iterator-helpers) for helper methods for iterators that are similar to array methods found in `Array.prototype`. This proposal is in "stage 3" which is the final stage meaning that it is very likely it will be introduced into the language soon. These methods will make generator usage more syntactically concise, although it wouldn't be difficult to implement these helper methods in your own personal utility in the meantime. For example, a mapper could be implemented with 
 
 ```javascript
 function map(iterator, mapper) {
