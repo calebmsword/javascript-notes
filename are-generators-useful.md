@@ -111,7 +111,7 @@ You should know that that the iterators returned by generators also have a `retu
 
 ### Don't use the iterator directly
 
-In general, I think generators make the most sense when you abstract away direct usage of the iterator. For example, you can pass iterators into `for of` loops. An as impractically simple example for the sake of introducing syntax, we will show thus using a numeric iterator.
+In general, I think generators make the most sense when you abstract away direct usage of the iterator. For example, you can pass iterators into `for of` loops. An as impractically simple example for the sake of introducing syntax, we will show this using a numeric iterator.
 
 ```javascript
 function* integerGenerator() {
