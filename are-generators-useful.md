@@ -3,7 +3,7 @@ I find it difficult to motivate ES6 generators because they don't add anything n
 For example, many examples I see advocating for ES6 generators suggest something like the following:
 
 ```javascript
-function uniqueIdGenerator() {
+function* uniqueIdGenerator() {
   let i = 0;
   while(true) yield i++;
 }
