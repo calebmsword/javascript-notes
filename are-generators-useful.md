@@ -130,25 +130,29 @@ Also, when you need to get a sequence of values that are each "processed" in a c
 There is a [proposal](https://github.com/tc39/proposal-iterator-helpers) for helper methods for iterators that are similar to array methods found in `Array.prototype`. This proposal is in "stage 3" which is the final stage meaning that it is very likely it will be introduced into the language soon. These methods will make generator usage more syntactically concise, although it wouldn't be difficult to implement these helper methods in your own personal utility in the meantime. For example, a mapper could be implemented with 
 
 ```javascript
-function map(iterator, mapper) {
+function mapIterator(iterator, mapper) {
   return (function* () {
-    let value;
-    let done = false;
+    let { value, done } = iterator.next();
     while (!done) {
-      ({ value, done } = iterator.next());
       yield mapper(value);
+      ({ value, done } = iterator.next());
     }
   })();
 }
+
 
 function* naturals(limit) {
   let i = 0;
   while (i < limit) yield i++;
 }
 
-const mapped = map(naturals(10),  x => x * x);
+const mapped = mapIterator(naturals(4),  x => x * x);
 
 for (const n of mapped) console.log(n);
+// 0
+// 1
+// 4
+// 9
 ```
 
 ### In conclusion
