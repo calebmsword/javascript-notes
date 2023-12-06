@@ -132,14 +132,13 @@ There is a [proposal](https://github.com/tc39/proposal-iterator-helpers) for hel
 ```javascript
 function mapIterator(iterator, mapper) {
   return (function* () {
-    let { value, done } = iterator.next();
+    let { value, done } = iterator.next()
     while (!done) {
       yield mapper(value);
-      ({ value, done } = iterator.next());
+      ({value, done} = iterator.next());
     }
   })();
 }
-
 
 function* naturals(limit) {
   let i = 0;
