@@ -153,7 +153,7 @@ A cloning algorithm should allow for user-injected logic so that users can accou
 
 # So, how do we clone JavaScript objects?
 
-It is actually not possible to truly clone every JavaScript object. If your object has functions, `WeakMap`s, or `WeakSet`s, then it cannot be done. If your object has a property whose property descriptor includes accessors, then it also can't be done.
+It not possible to properly clone every JavaScript object. If your object has functions, `WeakMap`s, or `WeakSet`s, then it cannot be done. If your object has a property whose property descriptor includes accessors, then it also can't be done.
 
 However, if you are cloning an object that 
  - does not have symbol properties or values
