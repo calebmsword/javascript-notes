@@ -2,9 +2,9 @@ I recently encountered a situation where it would be convenient to deep copy a J
 
 ### deep clone, symbols, and serialization
 
-`structuredClone` is restrictive on what can be cloned because it employs the [structured clone algorithm](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm). The structured clone algorithm is used in many situations where data is serialized to some recipient. An example would be when `postMessage` is called in a Web Worker, where `postMessage` is used to send an object from the main thread to a Web Worker (or the other way around). The point here is that `structuredClone` will only clone objects which can be properly serialized.
+`structuredClone` is restrictive on what can be cloned because it employs the [structured clone algorithm](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm). The structured clone algorithm is used in many situations where data is serialized to some recipient. An example would be when `postMessage` is called in a Web Worker, which is used to send an object from the Web Worker to the main thread (there is also a function for going the other way around). The point here is that `structuredClone` will only clone objects which can be properly serialized.
 
-Symbols cannot be properly serialized since creating one guarantees a unique value. This leads to the extremely strange fact that `Symbol("foo") === Symbol("foo")` returns `false`. So, if you post a message to a Web Worker which contains a symbol and the Web Worker sends a message back which contains that symbol, in general, it is not always possible for the main thread to serialize the symbol into the symbol that was originally sent.
+Symbols cannot be properly serialized since creating one guarantees a unique value. This leads to the extremely strange fact that `Symbol("foo") === Symbol("foo")` is `false`. So, if you post a message to a Web Worker which contains a symbol and the Web Worker sends a message back which contains that symbol, in general, it is not always possible for the main thread to serialize the symbol into the symbol that was originally sent.
 
 `structuredClone` will throw an error if you try to clone an object containing a symbol. It is quite unfortunate that there isn't a native solution which removes this restriction, since there are plently of use cases where one would like to clone data that won't be serialized.
 
@@ -29,13 +29,13 @@ One might hope, then, that the language will introduce a mechanism for securely 
 
 ### deep clone and the prototype chain
 
-`structuredClone` handles the prototype chain strangely. We'll get to that in a second. Before that, let's discuss the merits of NOT cloning the prototype chain. Let the cloned object have the same prototype as the original. There many use cases where this is desireable.
+`structuredClone` handles the prototype chain strangely. We'll get to that in a second. Before that, let's discuss the merits of NOT cloning the prototype chain. Let the cloned object have the same prototype as the original.
 
-The best use for this is for cloning ES6 classes with methods. We cannot clone a function. But ES6 classes store methods on the prototype of the instance. This means that `structuredClone` won't throw if you clone an instance of an ES6 class which has methods. Since methods dynamically bind `this` to the object which calls them, any function that accesses data with the `this` keyword will refer to data contained in the clone, not the original. For the reasons discussed in the previous section, this won't always be the case, but it often is.
+The best use for this is for cloning ES6 classes with methods. We cannot clone a function. But ES6 classes store methods on the prototype of the instance. Since methods dynamically bind `this` to the object which calls them, any function that accesses data with the `this` keyword will refer to data contained in the clone, not the original. 
 
-However, if you stored non-methods on the prototype chain which are writeable or configurable, then changing the property on one instance will change the property for another. Data will be shared. It is not a proper clone.
+For the reasons discussed in the previous section, this won't always be a proper clone. The user could easily put a method in the prototype which accesses data from a closure, and the clone would then share this data with the original. This means that if a "clone" shares its prototype with the original, you are trusting that the user attempted to clone a "proper" method which only accesses data through the `this` keyword and arguments passed to the function.
 
-If you have a use case where you store data in the prototype chain, then you can easily write an algorithm that walks the prototype chain and clones each object there. For this reason, I think it is reasonable to create a cloning algorithm which does not clone the prototype chain. We can easily use it clone the chain if we need to. A naive example would be
+It also possible that you stored non-methods on the prototype chain which are writeable or configurable. In this case, changing the property on one instance will change the property for another. Data will be shared. It is not a proper clone. If you have a use case where you store configurable or writeable non-methods in the prototype chain, then you can easily write an algorithm that walks the prototype chain and clones each object there. For this reason, I think it is reasonable to create a cloning algorithm which does not clone the prototype chain. We can easily use it clone the chain if we need to. A naive example would be
 
 ```javascript
 const myClone = myCloneAlgorithm(myObject);
@@ -75,7 +75,11 @@ while (Object.getPrototypeOf(tempOriginal) !== null
 
 Now, let's discuss `structuredClone` and its very strange handling of prototypes. If it recognizes that the object to clone has the prototype of a native JavaScript API (`RegExp`, `Date`, `Map`, `Set`, `TypeArray`, etc...), then the cloned object will inherit that prototype. But if the prototype is not that of some recognized JavaScript API, the prototype of the cloned object will be `Object.prototype`.
 
-I'm not sure why `structuredClone` doesn't have the objects always share prototypes. Very strange. 
+Sharing the prototype with the original requires trust. But `structuredClone` uses an algorithm which cannot afford trust. It is an algorithm that must guarantee it clones an object that can be safely serialized. If your prototype is that of a native JavaScript API, then `structuredClone` can guarantee that the methods in the prototype access data safely with `this` and arguments passed to the function. An unrecognized prototype might not do the same, so unrecognized prototypes are not inherited in the clone.
+
+I have mixed feelings on `structuredClone`'s refusal to inherit unrecognized prototypes. Perhaps there could have been an second argument which is an object. The object could have a property that, if provided, forces the clone returned by `structuredClone` to inherit the prototype of the original object.
+
+More than anything, I hate that `structuredClone` naively borrows the structured clone algorithm when there is a need for a less strict API for cloning. I wish the function had been named something different and was less strict.
 
 ### deep clone and WeakMaps and WeakSets
 
@@ -93,7 +97,7 @@ However, some data is not accessible through properties. ES6 Maps, for example, 
 
 If your object is sealed or frozen, the "clone" returned by `structuredClone` will not be. In my opinion, this is a mistake, and an update should be made to the ECMAScript specification to fix this.
 
-The property descriptor for any object is also ignored. I believe the reason for this is that property descriptors can have functions (the `get` and `set` accessor properties), and the fact that it is impossible to clone functions made the designers of the structured clone algorithm decide it was best to ignore the property descriptor entirely. I think this a reasonable concern. You could easily create a property with a `get` accessor that returns a value accessed by closure. If the cloned object gets a property with the same `get` accessor, that "cloned" property  the same memory as the original. The attempt to clone would fail. 
+The property descriptor for any object is also ignored. I believe the reason for this is that property descriptors can have functions (the `get` and `set` accessor properties), and the fact that it is impossible to clone functions made the designers of the structured clone algorithm decide it was best to ignore the property descriptor entirely. I think this a reasonable concern. You could easily create a property with a `get` accessor that returns a value accessed by closure. If the cloned object gets a property with the same `get` accessor, that "cloned" property will access the same memory as the original. The attempt to clone would fail. 
 
 However, the algorithm should have preserved enumerability, configurability, and writeability, and then thrown errors if any property descriptor contained accessors.
 
@@ -125,7 +129,7 @@ Spidermonkey's implementation of `structuredClone` does not blow up the call sta
 
 Before `structuredClone` was introduced, the most common hack for deep cloning objects was to use `const myClone = JSON.parse(JSON.stringify(myObject))`. This would only work for objects with primitives and/or arrays of primitives. Many JavaScript APIs like `Date` or `RegExp` would be lost in the process. And the hack throws an error if the object had circular references.
 
-It is very easy to create an object which references itself. For example, `const a = {}; a.self = a`. It is not uncommon for graph data structures to have children which point back to the graph; Nodes in the DOM are just one of many practical examples. Thus, any good cloning algorithm should be able to handle circular references.
+It is very easy to create an object which references itself. For example, `const a = {}; a.self = a`. It is not uncommon for nodes in a graph to have children which point back to that node; Nodes in the DOM are just one of many practical examples. Thus, any good cloning algorithm should be able to handle circular references.
 
 Luckily, `structuredClone` does.
 
@@ -174,3 +178,11 @@ If you use my algorithm, I made some design choices that you must be aware of:
  - The algorithm does not clone the prototype chain. But as shown before, it is easy to use the algorithm to clone the prototype chain of an object if that chain doesn't include methods.
 
 My algorithm is flexible, perhaps too flexible, but I wanted an alternative that was less rigid than `structuredClone`. I wanted the user to clone anything without sending exceptions to the call stack, and I felt this would be okay as long as failures to perform true clones were logged.
+
+# Should we even try to deep clone things?
+
+Probably not.
+
+An appeal of object-oriented programming is encapsulation. This means that objects can have data that we cannot access directly. Cloning something requires accessing all of its data, which completely ignores the principle of encapsulation.
+
+Java might have the right idea here. In Java, classes have the responsiblity of implementing the logic for cloning themselves (`Object::clone` has to be overridden for cloning to be possible). If the object shouldn't be cloned, you can throw an error when the user tries. Perhaps we should do the same in JavaScript.
