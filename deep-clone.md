@@ -1,4 +1,4 @@
-I recently encountered a situation where it would be convenient to deep copy a JavaScript object. I discovered that this is actually an extremely complex problem. JavaScript provides a native solution through the `structuredClone` method available on the global object. However, it has many limitations that make insufficient for some use cases. It is best to discuss all of the pitfalls and design decisions that a deep-clone algorithm must make. In the process, we will see some of `structuredClone`'s strange design choices and its many limitations. 
+I recently encountered a situation where it would be convenient to deep copy a JavaScript object. I discovered that this is actually an extremely complex problem. JavaScript provides a native solution through the `structuredClone` method available on the global object. However, it has many limitations that make insufficient for some use cases. It is best to discuss all of the potentials pitfalls of a deep-clone algorithm, as well as the design decisions that an algorithm must make. In the process, we will see some of `structuredClone`'s strange design choices and its many limitations. 
 
 ### deep clone, symbols, and serialization
 
@@ -35,7 +35,7 @@ The best use for this is for cloning ES6 classes with methods. We cannot clone a
 
 However, if you stored non-methods on the prototype chain which are writeable or configurable, then changing the property on one instance will change the property for another. Data will be shared. It is not a proper clone.
 
-If you have a use case where you store data in the prototype chain, then you can easily write an algorithm will walks the prototype chain and clones each object there. For this reason, I think it is reasonable to create a cloning algorithm which does not clone the prototype chain. We can easily use it clone the chain if we need to. For example,
+If you have a use case where you store data in the prototype chain, then you can easily write an algorithm that walks the prototype chain and clones each object there. For this reason, I think it is reasonable to create a cloning algorithm which does not clone the prototype chain. We can easily use it clone the chain if we need to. For example,
 
 ```javascript
 const myClone = myCloneAlgorithm(myObject);
@@ -99,7 +99,7 @@ Spidermonkey's implementation of `structuredClone` does not blow up the call sta
 
 Before `structuredClone` was introduced, the most common hack for deep cloning objects was to use `const myClone = JSON.parse(JSON.stringify(myObject))`. This would only work for objects with primitives and/or arrays of primitives. Many JavaScript APIs like `Date` or `RegExp` would be lost in the process. And the hack throws an error if the object had circular references.
 
-It is very easy to create an object which references itself. For example, `const a = {}; a.self = a`. It is not uncommon for graph data structures to have children which point back to the graph. Thus, any good cloning algorithm should be able to handle circular references.
+It is very easy to create an object which references itself. For example, `const a = {}; a.self = a`. It is not uncommon for graph data structures to have children which point back to the graph; Nodes in the DOM are just one of many practical examples. Thus, any good cloning algorithm should be able to handle circular references.
 
 Luckily, `structuredClone` does.
 
