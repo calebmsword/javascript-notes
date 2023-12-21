@@ -108,7 +108,7 @@ However, some data is not accessible through properties. ES6 Maps, for example, 
 
 ### deep clone and metadata
 
-If your object is inextensible, sealed, and/or frozen, the "clone" returned by `structuredClone` will not be. In my opinion, this is a mistake, and an update should be made to the ECMAScript specification to fix this.
+If your object is inextensible, sealed, and/or frozen, the "clone" returned by `structuredClone` will not be. In my opinion, this is a mistake, and an update should be made to its specification to fix this.
 
 The property descriptor for any object is also ignored. I believe the reason for this is that property descriptors can have functions (the `get` and `set` accessor properties), and the fact that it is not always possible to clone functions made the designers of the structured clone algorithm decide it was best to ignore the property descriptor entirely. I think there were good intentions with this decision. You could easily create a property with a `get` accessor that returns a value accessed by closure. If the cloned object gets a property with the same `get` accessor, that "cloned" property will access the same memory as the original. The attempt to clone would fail. 
 
