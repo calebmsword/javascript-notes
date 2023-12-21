@@ -12,7 +12,7 @@ Symbols cannot be safely serialized since creating one guarantees a unique value
 
 `structuredClone` will also throw if it tries to clone an object which contains functions. This is actually a good thing because it is *not always possible to deeply clone a function*.
 
-If you google around, you will find [hacks](https://stackoverflow.com/a/6772648/22334683) which pretend to clone functions.But they don't actually clone the function. They call the same function with extra steps. It is very unfortunate that one popular deep clone library actually uses this hack to "clone" functions.
+If you google around, you will find [hacks](https://stackoverflow.com/a/6772648/22334683) which pretend to clone functions. But they don't actually clone the function. They call the same function with extra steps. It is very unfortunate that one popular deep clone library actually uses this hack to "clone" functions.
 
 It is possible to clone *some* functions. It is irresponsible, but I will show you one of the ways.
 
