@@ -78,6 +78,7 @@ let tempClone = myClone;
 let tempOriginal = myObject;
 while (Object.getPrototypeOf(tempOriginal) !== null
        && getAllPropertiesOf(tempOriginal).every(prop =>
+           tempOriginal[prop] !== "function")) {
     const newPrototype = myCloneAlgorithm(Object.getPrototypeOf(tempOriginal));
     Object.setPrototypeOf(tempClone, newPrototype);
     [tempClone, tempOriginal].forEach(temp => {
