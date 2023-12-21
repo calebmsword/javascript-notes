@@ -8,38 +8,51 @@ Symbols cannot be safely serialized since creating one guarantees a unique value
 
 `structuredClone` will throw an error if you try to clone an object containing a symbol. It would be nice if there were a native solution which removes this restriction. There vast majority of use cases for `structuredClone` won't involve serialization. In those use cases, symbols can be cloned without problem.
 
+Immediately, we see the design flaw of `structuredClone`.  is not a function which deeply clones objects. It is solves a more specific problem: it deep clones objects **if they can be safely serialized**. The reason it was built this way was because it was easy. The structured clone algorithm specification, by coincidence, happened to deep clone serializable objects. Many runtimes implemented a function to do this. It was realized that, since there is a desire for deep cloning, it would be nice for the JavaScript community if this "deep clone function" was exposed.
+
+The problem is that they stopped there. It would have been nice if the committee which introduced `structuredClone` took the time to extend the functionality to solve a wider collection of use cases. Instead, we are given a function that cannot clone one of the basic primitive types in JavaScript.
+
 ### deep clone and functions
 
-`structuredClone` will also throw if it tries to clone an object which contains functions. This is actually a good thing because it is *not always possible to deeply clone a function*.
+`structuredClone` will also throw if it tries to clone an object which contains functions. This is a reasonable design decision because it is *not always possible to deeply clone a function*.
 
-If you google around, you will find [hacks](https://stackoverflow.com/a/6772648/22334683) which pretend to clone functions. But they don't actually clone the function. They call the same function with extra steps. It is very unfortunate that one popular deep clone library actually uses this hack to "clone" functions.
+If you google around, you will find [hacks](https://stackoverflow.com/a/6772648/22334683) which pretend to clone functions. But they don't really clone the function. A new Function object is created, but all it does is call the original function. This means that the closure of the original function is shared with the new function. The "cloned" function and the original function share data, so it is not a true clone. It is very unfortunate that one popular deep clone library actually uses this hack to "clone" functions.
 
-It is possible to clone *some* functions. It is irresponsible, but I will show you one of the ways.
+There are forbidden techniques that use `Function.prototype.toString` to "clone" a function. But like the previous hack, they also fail with closure. it would be irresponsible of me to describe these techniques in detail because they are rife with security issues, so I won't.
 
-`Function.prototype.toString`, in most JavaScript runtimes, will return a string containing the exact source code of the function it is called on (this includes whitespace and comments). Note that the specification [demands different behavior](https://tc39.es/ecma262/#sec-function.prototype.tostring) for native JavaScript functions, so you can't clone those. Also note that Safari and Node.js do not fully implement the specification for `Function.prototype.toString`. This is fine because you should not use it anyway.
+One might imagine, then, that the specification committee could introduce a mechanism that will correctly and securely deep-clone a function. But it is hard to imagine this ever being the case because of closure. Deep-cloning a function would require somehow creating a copy of the closure of the original function for the cloned function. I can't imagine this would be a good idea.
 
-The simplest way to use this to clone a function is to use `eval`. For example:
+There is one situation where a function can be reliably cloned, and that is if the function is created from a well-designed factory. Here is a simple example:
 
 ```javascript
-const myFunc = () => "I am a function";
-
-const clonedMyFunc = eval("() => " + myFunc.toString())();
-console.log(clonedMyFunc());  // "I am a function"
+function getRepeater() {
+    return value => console.log(value);
+}
 ```
 
-`const clonedMyFunc = eval(myFunc.toString)` will work if you define `myFunc` using an arrow function, but it will not work if you use the `function` syntax. If you use the `function` syntax, the `eval` will declare a new function in the scope `eval` is called in and return `undefined`. You can handle both cases by creating an anonymous function factory which returns the desired function. The `eval` returns the factory, and by calling the factory, you get a clone of the original function.
+This factory creates a function which simply logs whatever value is provided to it. This function does not access any data outside of the scope of the factory. If we want a copy of this function, we simply have to call the factory again.
 
-This will not always work as expected. The functions declared in `eval` have the scope where the `eval` is executed. If the original function refers to variable names that are not in the scope of the `eval`, chaos will ensue. In strict mode, errors will be thrown. Otherwise, global variables will created, or worse, the function will refer to variables in the scope of the `eval` call.
+The issue is determining whether or not the function came from the factory. The solution is create a module which exports the factory and keeps track of all of the functions which have been made:
 
-That is reason enough to never use this approach. But for security concerns, you should absolutely never use `eval` for any reason, ever, especially with custom variables. With the approach I showed, the user can open the JavaScript console on the browser and monkeypatch `Function.prototype.toString` to return a string which defines a function of their choice. **That is, the approach I showed allows users to perform arbitrary code execution**. This is why I said it was irresponsible to show this approach.
+```
+// repeator.js
 
-Another way to clone functions uses the `Function` constructor with `Function.prototype.toString`. But this is vulnerable to the exact same security concerns as the `eval` approach, so I won't describe it in detail.
+const registry = Set();
 
-**In short, you should never clone functions in JavaScript because there are massive security concerns with the approaches available**. Even if security weren't an issue, the approaches fail for many functions which access values in their closures.
+export function getRepeater() {
+    const repeater = value = console.log(value);
+    registry.add(repeater);
+    return repeater;
+}
 
-One might hope, then, that the language will introduce a mechanism that will correctly and securely deep-clone a function. But it is hard to imagine this ever being the case because of the fact that functions have closures. Deep-cloning a function would require somehow creating a copy of the scope of the original function for the cloned function. I doubt this would ever happen. It might even be impossible.
+export function isRepeater(candidate) {
+    return registry.has(candidate);
+}
+```
 
-I should mention an additional caveat. Some functions can be created from function factories. Much of the time, these functions can be trivially cloned if we have access to the factory. However, it is not possible to know at runtime whether or not a function was created from a factory. There are situations where it could be possible to clone such a function if the user was able to inject custom logic into the algorithm, and we will show an example of this later.
+As long as we encapsulate the registry in the module, then we have a foolproof method for checking if the function was returned from the factory using `isRepeater`. That means that, any time we try to clone a function, we could check if it is a repeater. If it is, we can call the factory to create a proper clone.
+
+Unfortunately, there is no way to tell `structuredClone` about this factory, so repeaters will never be able to be cloned with `structuredClone`. It would be nice if the algorithm would allow for user-injected logic so that we could correctly clone our repeater functions.
 
 ### deep clone and the prototype chain
 
@@ -93,13 +106,13 @@ Now, let's discuss `structuredClone` and its strange handling of prototypes. If 
 
 Sharing the prototype with the original requires trust. But `structuredClone` uses an algorithm which affords minimul trust. If your prototype is that of a native JavaScript API, then `structuredClone` can guarantee that the methods in the prototype access data safely with `this` and arguments passed to the function. An unrecognized prototype might not do the same, so `structuredClone` errs on the side of caution. Unrecognized prototypes are not inherited in the clone.
 
-I have mixed feelings on `structuredClone`'s refusal to inherit unrecognized prototypes. More than anything, I think it is unfortunate that `structuredClone` naively borrows the structured clone algorithm when there is a need for a less strict API for cloning. I wish the function had been named something different and could optionally be run in a mode that always copies the prototype.
+I have mixed feelings on `structuredClone`'s refusal to inherit unrecognized prototypes. I wish the function had been named something different and could optionally be run in a mode that always copies the prototype.
 
 ### deep clone and WeakMaps and WeakSets
 
 WeakMaps and WeakSets should not be cloned. WeakMaps and WeakSets contain weak references to the objects given to them, meaning that the object can still get garbage collected in the future. Suppose we tried to clone the data in a WeakMap, and one of its objects is about to get garbage-collected. Should the clone have this data? Should it ignore it? Whatever the answer should be, we cannot know if something will be garbage-collected anyway since the JavaScript specification does not expose this information.
 
-`structuredClone` throws if you try to clone WeakMaps or WeakSets, which is a good choice. It is not actually not possible anyway because WeakMaps and WeakSets do not provide methods for iterating over all of their data.
+`structuredClone` throws if you try to clone WeakMaps or WeakSets, which is one of the few restrictions of `structuredClone` this is also correct for the general use case. It is not even possible anyway, because WeakMaps and WeakSets do not provide methods for iterating over all of their data.
 
 ### deep clone and JavaScript APIs
 
@@ -119,7 +132,7 @@ However, the algorithm should have preserved enumerability, configurability, and
 
 Unforunately, `structuredClone` will not copy any properties on an object that are symbols. The previous discussion on symbols should make it clear why this is case.
 
-It is extremely unfortunate that `structuredClone` *ignores* non-enumerable properties. I think this is a blunder.
+It also ends up that `structuredClone` *ignores* non-enumerable properties. It is extremely unfortunate that the only native deep-copy method JavaScript forces this restriction.
 
 ### deep clone and recursion
 
@@ -163,9 +176,11 @@ If the user doesn't monkeypatch them, `structuredClone` supports every API liste
 
 ### cloning user-created objects
 
-It is impossible for a cloning algorithm to correctly clone all user-created objects. Let me provide an example of such an object.
+Like with functions, objects can also be cloneable if they are created from well-designed factories. Here is a simple factory which creates a object which wraps an encapsulated value.
 
 ```javascript
+// wrapper.js
+
 const registry = new WeakSet();
 
 export const getWrapper = () => {
@@ -185,7 +200,7 @@ export const getWrapper = () => {
 export const isWrapper = candidate => registry.has(candidate);
 ```
 
-It is possible to correctly clone the object returned by `getWrapper`, but it requires an API that an algorithm wouldn't be able to anticipate. For example:
+The object created by this factory does not access any data outside the scope fo the factory function. The API of the object allows us to manipulate the value it encapsulates. We also provided a reliable method for determining whether an object was created by the factory. This means that we can properly clone the objects from this factory if it encapsulates a cloneable value. Here is one way we could do it:
 
 ```javascript
 import { getWrapper, isWrapper } from "./wrapper.js";
@@ -203,9 +218,9 @@ A cloning algorithm should allow for user-injected logic so that users can accou
 
 # So, how do we clone JavaScript objects?
 
-It not possible to properly clone every JavaScript object. If your object has `WeakMap`s or `WeakSet`s, then it cannot be done. If your object has functions, then it might be possible, but there is no secure method for doing so, so we shouldn't clone it regardless. And if your object has a property whose property descriptor includes accessors, then it also might not be possible. Cloning the entire prototype chain is also rarely possible. Most objects inherit from Object.prototype which includes native functions which are impossible to clone.
+It not possible to properly clone every JavaScript object. If your object has `WeakMap`s or `WeakSet`s, then it cannot be done. If your object has functions, it often impossible. If your object has a property whose property descriptor includes accessors, then it may also be impossible. Cloning the entire prototype chain is also rarely possible. Most objects inherit from `Object.prototype` which includes native functions which are impossible to clone.
 
-However, if you are cloning an object that 
+However, if by "cloning" an object, you are willing to allow it to contain a native JavaScript prototype, then you can use `structuredClone`. But only if the object you wish to clone
  - does not have symbol properties or values
  - does not have non-default property descriptors
  - is not sealed or frozen, and no nested values are sealed or frozen
