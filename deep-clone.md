@@ -8,7 +8,7 @@ Symbols cannot be safely serialized since creating one guarantees a unique value
 
 `structuredClone` will throw an error if you try to clone an object containing a symbol. It would be nice if there were a native solution which removes this restriction, as most cases for `structuredClone` won't involve serialization.
 
-Immediately, we see the design flaw of `structuredClone`. It is not a function which deeply clones objects. It is solves a more specific problem: it deep clones objects **if they can be safely serialized**. The reason it was built this way was because it was easy. The structured clone algorithm specification, by coincidence, happened to deep clone serializable objects. Many JavaScript runtimes implemented a function to do this. It was realized that, since there is a desire for deep cloning, it would be nice for the JavaScript community if this "deep clone function" was exposed.
+Immediately, we see the design flaw of `structuredClone`. It is not a function which deeply clones objects. It is solves a more specific problem: it deep clones objects **if they can be safely serialized**. The reason it was built this way was because it was easy. The structured clone algorithm specification, by coincidence, happened to deep clone serializable objects. Many JavaScript runtimes implemented a function to do this. It was realized that  it would be nice for the JavaScript community if this "deep clone function" was exposed.
 
 The problem is that they stopped there. It would have been nice if the committee which introduced `structuredClone` took the time to extend the functionality to solve a wider collection of use cases. Instead, we are given a function that cannot clone one of the basic primitive types in JavaScript.
 
