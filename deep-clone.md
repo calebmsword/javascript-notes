@@ -52,7 +52,7 @@ export function isRepeater(candidate) {
 
 As long as we encapsulate the registry in the module, then we have a foolproof method for checking if the function was returned from the factory using `isRepeater`. That means that, any time we try to clone a function, we could check if it is a repeater. If it is, we can call the factory to create a proper clone.
 
-Here is an example of a factory function that whose spawn cannot be cloned.
+Here is an example of a factory function whose spawn cannot be cloned.
 
 ```javascript
 let i = 0;
