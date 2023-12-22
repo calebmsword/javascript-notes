@@ -92,4 +92,45 @@ export const getMyObject = () => {
 export const isMyObject = candidate => registry.has(candidate);
 ```
 
-If we keep registry in this module and do not export, it is safely encapsulated. Then `isMyObject` is a foolproof way to check if an object was created from the `getMyObject` factory.
+If we do not export the registry from this module, it is safely encapsulated. Then `isMyObject` is a foolproof way to check if an object was created from the `getMyObject` factory.
+
+I have already found myself using this pattern multiple times. It has reached the point where I have created a function which transforms a factory into a type-checkable factory:
+
+```javascript
+function getTypeCheckableFactory(name, factory) {
+    const registry = WeakSet();
+    return {
+        [`get${name}`](...args) {
+            const result = factory(..args);
+            registry.add(result);
+            return result;
+        },
+        [`is${Name}`](candidate) {
+            return registry.has(candidate);
+        }
+    };
+}
+```
+
+Here is an example of its usage:
+
+```javascript
+import getTypeCheckableFactory from "./utils";
+
+const { getWrapper, isWrapper } = getTypeCheckableFactory("Wrapper", () => {
+    let value;
+    return {
+      get() {
+          return value;
+      }
+      set(newValue) {
+        value = newValue;
+      }
+    }
+});
+
+const wrapper = getWrapper();
+wrapper.set({ foo: "bar" });
+console.log(wrapper.get());  // { foo: "bar" }
+console.log(isWrapper(wrapper));  // true
+```
