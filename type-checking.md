@@ -12,6 +12,7 @@ A stricter check would look something like
 function instanceof(object, constructor) {
   return Object.getPrototypeOf(object) === constructor.prototype;
 }
+```
 
 This better represents what we think of when we see the word `instanceof`. This function is very specific about the type of the object. This still isn't secure, however, because we could easily change the constructor's prototype before calling this function to create an artifical result.
 
