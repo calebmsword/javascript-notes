@@ -57,7 +57,7 @@ function isType(object, type) {
 
 This is actually a reliable way to type check for some of JavaScript's native classes. However, some of the newer native types use `Symbol.toStringType` to determine the result of `Object.prototype.toString.call`, so this strict version would only work for native types introduced before ES6.
 
-Checking the ECMAScript specification, we see that this will work for the classes Array, Date, Error, RegExp, Number, Boolean, String,  and Function. It will also work for the `arguments` object that is implicitly passed to functions.
+Checking the ECMAScript specification, we see that this will work for the classes `Array`, `Date`, `Error`, `RegExp`, `Number`, `Boolean`, `String`, and `Function`. It will also work for the `arguments` object that is implicitly passed to functions.
 
 Let us create a type-checker for these types specifically.
 
