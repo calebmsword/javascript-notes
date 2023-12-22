@@ -125,7 +125,6 @@ export const getMyObject = () => {
   myObject = Object.freeze({ foo: "bar" });
   registry.add(myObject);
   return myObject;
-
 }
 
 export const isMyObject = candidate => registry.has(candidate);
