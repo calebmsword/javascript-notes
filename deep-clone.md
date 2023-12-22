@@ -101,7 +101,7 @@ while (![null, Object.prototype].includes(Object.getPrototypeOf(tempOriginal))) 
 }
 ```
 
-This approach won't be perfect. If you encounter a native JavaScript API, for instance, it will have methods. But you can't clone native methods. It might be better to stop once you reach any prototype with methods on it.
+This approach won't be perfect. You are very likely to encounter a native JavaScript prototype somewhere in the process such as `Object.prototype`. These prototypes typically have methods, but you can't clone native methods. It might be better to stop once you reach any prototype with methods on it.
 
 ```javascript
 const myClone = myCloneAlgorithm(myObject);
