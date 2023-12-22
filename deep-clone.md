@@ -234,7 +234,7 @@ A cloning algorithm should allow for user-injected logic so that users can accou
 
 # So, how do we clone JavaScript objects?
 
-It not possible to properly clone every JavaScript object. If your object has `WeakMap`s or `WeakSet`s, then it cannot be done. If your object has functions, it often impossible. If your object has a property whose property descriptor includes accessors, then it may also be impossible. Cloning the entire prototype chain is also rarely possible. Most objects inherit from `Object.prototype` which includes native functions which are impossible to clone.
+It not possible to properly clone every JavaScript object. If your object has `WeakMap`s or `WeakSet`s, then it cannot be done. If your object has functions, it is often impossible. If your object has a property whose property descriptor includes accessors, then it may also be impossible. Cloning the entire prototype chain is also rarely possible. Most objects inherit from `Object.prototype` which includes native functions which are impossible to clone.
 
 However, if you are willing to allow a "cloned" object have a native JavaScript prototype as its prototype, then you can use `structuredClone`. But only if the object you wish to clone
  - does not have symbol properties or values
