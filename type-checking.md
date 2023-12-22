@@ -55,7 +55,7 @@ function isType(object, type) {
 }
 ```
 
-However, some native types use `Symbol.toStringType` to determine the result of `Object.prototype.toString.call`, so this strict version would only work for native types introduced before ES6.
+This is actually a reliable way to type check for some of JavaScript's native classes. However, some of the newer native types use `Symbol.toStringType` to determine the result of `Object.prototype.toString.call`, so this strict version would only work for native types introduced before ES6.
 
 # Calling native methods
 
