@@ -249,7 +249,7 @@ It is rare when cloning objects that we ever perform a true clone. Instead, we i
 
 then `structuredClone` will clone the top-level object in the prototype chain and ensure that its prototype is native prototype. If `structuredClone` recognizes the object as one of JavaScript's native classes that it supports, then the prototype is that for the class. Otherwise, the prototype will be `Object.prototype`.
 
-If these limitations are too strict for your use case, then [my algorithm](https://github.com/calebmsword/parsec/blob/main/example/example-utils/clone-deep.js) might suffice. Here are some of its features:
+If these limitations are too strict for your use case, then [my algorithm](https://github.com/calebmsword/clone-deep/tree/main) might suffice. Here are some of its features:
  - The cloned object always shares its prototype with that of the original.
  - The algorithm uses no recursion.
  - My algorithm supports cloning instances of `Map`, `Set`, `TypeArray`, `ArrayBuffer`, `RegExp`, `Error`, `Date`, `Number`, `String`, `Boolean`, `Symbol` and `Object`.
