@@ -57,6 +57,64 @@ function isType(object, type) {
 
 This is actually a reliable way to type check for some of JavaScript's native classes. However, some of the newer native types use `Symbol.toStringType` to determine the result of `Object.prototype.toString.call`, so this strict version would only work for native types introduced before ES6.
 
+Checking the ECMAScript specification, we see that this will work for the classes Array, Date, Error, RegExp, Number, Boolean, String,  and Function. It will also work for the `arguments` object that is implicitly passed to functions.
+
+Let us create a type-checker for these types specifically.
+
+```javascript
+const nativeTypes = [
+  "Arguments",
+  "Array",
+  "Boolean",
+  "Date",
+  "Error",
+  "Function",
+  "Number",
+  "RegExp",
+  "String"
+];
+
+const getTypeChecker = type => object => {
+    let temp;
+    let current = object;
+
+    while (Object.getPrototypeOf(current) !== null 
+           && !current.hasOwnProperty(Symbol.toStringTag))
+        current = Object.getPrototypeOf(current);
+    
+    if (typeof current[Symbol.toStringTag] === "string") {
+        temp = current[Symbol.toStringTag];
+        delete current[Symbol.toStringTag];
+    }
+
+    result = {}.toString.call(object) === `[object ${type}]`;
+
+    if (temp !== undefined) current[Symbol.toStringTag] = temp;
+
+    return result;
+}
+
+const is = Object.create(null);
+
+nativeTypes.forEach(type => {
+    name = type.substring(0, 1).toLowerCase() + type.substring(1);
+    is[name] = getTypeChecker(type);
+});
+
+export default is;
+```
+
+Then we can use `is` like so:
+
+```javascript
+import is from "./type-check";
+
+console.log(is.array([]));  // true
+const obj = { [Symbol.toStringTag]: "Array" };
+console.log(Object.prototype.toString.call(obj));  // "[object Array]"
+is.array(obj);  // false
+```
+
 # Calling native methods
 
 Most native methods throw errors if the `this` binding is a function whose prototype is not the prototype. For example:
