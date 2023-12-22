@@ -252,9 +252,9 @@ then `structuredClone` will clone the top-level object in the prototype chain an
 If these limitations are too strict for your use case, then [my algorithm](https://github.com/calebmsword/parsec/blob/main/example/example-utils/clone-deep.js) might suffice. Here are some of its features:
  - The cloned object always shares its prototype with that of the original.
  - The algorithm uses no recursion.
- - My algorithm supports cloning instances of Map, Set, TypeArray, ArrayBuffer, RegExp, Error, Date, Number, String, Boolean, Symbol and Object.
+ - My algorithm supports cloning instances of `Map`, `Set`, `TypeArray`, `ArrayBuffer`, `RegExp`, `Error`, `Date`, `Number`, `String`, `Boolean`, `Symbol` and `Object`.
  - My algorithm clones property descriptors, non-enumerable properties and retains the extensible, frozen and sealed status of objects.
- - My algorith clones symbols and symbol properties.
+ - My algorithm clones symbols and symbol properties.
  - My algorithm properly handles circular references.
  - My algorithm also lets you input a custom function that provides custom logic so you can account for complicated custom objects, or even circumvent some design decisions my algorithm makes.
  - My algorithm can be enhanced with a "customizer", which is a function that allows the user to inject custom logic. With the customizer, the user can support additional types and override many design decisions if they would like restrictions on what can be cloned.
