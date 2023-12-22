@@ -20,7 +20,7 @@ This better represents what we think of when we see the word `instanceof`. This 
 
 Try using this function on various objects. The result probably looks something like `"[object Object]"`. If you create an instance of a `Date`, you get `"[object Date]"`.
 
-This is a tempting tool for type-checking native JavaScript classes because the specification requires that many native classes return a specific string. However, if the object has, anywhere in its prototype chain, the property `Symbol.toStringTag` and its value is a string, the result of `Object.prototype.toString.call` will change. For example:
+This is a tempting tool for type-checking native JavaScript classes because the specification requires that many native classes return a specific string. These classes are `Array`, `Function`, `Error`, `Boolean`, `Number`, `String`, `Date`, `RegExp`, `Object`, and the `arguments` object implicitly passed to functions. However, if the object has, anywhere in its prototype chain, the property `Symbol.toStringTag` and its value is a string, the result of `Object.prototype.toString.call` will change. For example:
 
 ```javascript
 const date = new Date();
@@ -38,6 +38,8 @@ function isType(object, type) {
 
     let temps = [];
     let current = object;
+    
+    // get rid of all Symbol.toStringTag properties in the chain
     while (typeof object[Symbol.toStringTag] === "string") {
 
         // walk prototypes until we find one that has Symbol.toStringTag property
@@ -90,7 +92,9 @@ function isType(object, type) {
 }
 ```
 
-This is terrible because it adds a lot of complexity and it is not any more reliable than the previous. If the user assigns a non-configurable, non-writeable `Symbol.toStringTag` anywhere in the prototype chain, then the stricter test fails. We might as well have just used `Object.prototype.toString.call(object) === "[object <Type>]`.
+This is terrible because it adds a lot of complexity and it is not any more reliable than the previous. If the user assigns a non-configurable, non-writeable `Symbol.toStringTag` anywhere in the prototype chain, then the stricter test fails. We might as well have just used `Object.prototype.toString.call(object) === "[object <Type>]"`.
+
+More recent native classes like `Map` and `Set` have a non-writeable `Symbol.toStringTag` in their prototype which forces `Object.prototype.toString.call(object)` to return a specific string. But the property is configurable, so you can still change it by manipulating its property descriptor. So, this method is just as insecure as `instanceof`.
 
 # Calling native methods
 
