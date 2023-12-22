@@ -1,4 +1,4 @@
-I am aware of four ways to type-check objects in JavaScript. Only one of the techniques actually works. However, it only works with custom objects. To work with native JavaScript objects such as Date, Map, or Set, we are forced to experiment with the inferior approaches.
+I am aware of four ways to type-check objects in JavaScript. Two of them actually work consistently, but these two don't work with all of JavaScript's native objects. The other two are unreliable, but they can be used with all of JavaScript's native objects. So we should understand all of the approaches.
 
 # `instanceof`
 
