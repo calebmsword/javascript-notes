@@ -1,4 +1,4 @@
-I am aware of four ways to type-check objects in JavaScript. Two of them actually work consistently, but these two don't work with all of JavaScript's native objects. The other two are unreliable, but they can be used with all of JavaScript's native objects. So we should understand all of the approaches.
+I am aware of four ways to type-check objects in JavaScript. Only of them works consistently, but only with custom objects. The other three methods, while unreliable, can be used with JavaScript's native objects. So we should understand all of the approaches.
 
 # `instanceof`
 
@@ -35,90 +35,62 @@ Something stricter would be a function like the following:
 
 ```javascript
 function isType(object, type) {
-    
-    let current = object;
-    while (Object.getPrototypeOf(current) !== null 
-           && !current.hasOwnProperty(Symbol.toStringTag))
-        current = Object.getPrototypeOf(current);
 
-    let temp;
-    if (typeof current[Symbol.toStringTag] === "string") {
-        temp = current[Symbol.toStringTag];
-        delete current[Symbol.toStringTag];
+    let temps = [];
+    let current = object;
+    while (typeof object[Symbol.toStringTag] === "string") {
+
+        // walk prototypes until we find one that has Symbol.toStringTag property
+        while (Object.getPrototypeOf(current) !== null 
+               && !current.hasOwnProperty(Symbol.toStringTag))
+            current = Object.getPrototypeOf(current);
+
+        // If that Symbol.toStringTag property has a string value, delete it
+        if (typeof current[Symbol.toStringTag] === "string") {
+
+            // but remember its value so we can assign it back
+            temps.push([current, current[Symbol.toStringTag]]);
+
+            // if we can't delete it, try making it writeable
+            if (!(delete current[Symbol.toStringTag])) {
+                try {
+                    Object.defineProperty(current, Symbol.toStringTag, {
+                        writeable: true
+                    });
+                    delete current[Symbol.toStringTag];
+                }
+                catch(_) {
+                    try {
+                        // if that didn't work, try making accessor
+                        Object.defineProperty(current, Symbol.toStringTag, {
+                            get() {
+                                return;
+                            }
+                        });
+                    }
+                    catch(_) {
+                        // if that didn't work, give up
+                        break;
+                    }
+                }
+            }   
+        }
     }
 
     result = {}.toString.call(object) === `[object ${type}]`;
 
-    if (temp !== undefined) current[Symbol.toStringTag] = temp;
-
-    return result;
-}
-```
-
-This is actually a reliable way to type check for some of JavaScript's native classes. However, some of the newer native types use `Symbol.toStringType` to determine the result of `Object.prototype.toString.call`, so this strict version would only work for native types introduced before ES6.
-
-Checking the ECMAScript specification, we see that this will work for the classes `Array`, `Date`, `Error`, `RegExp`, `Number`, `Boolean`, `String`, and `Function`. It will also work for the `arguments` object that is implicitly passed to functions.
-
-Let us create a type-checker for these types specifically.
-
-```javascript
-const nativeTypes = [
-  "Arguments",
-  "Array",
-  "Boolean",
-  "Date",
-  "Error",
-  "Function",
-  "Number",
-  "RegExp",
-  "String"
-];
-
-const getTypeChecker = type => object => {
+    temps.forEach(([obj, value]) => {
+        try {
+            obj[Symbol.toStringTag] = value;
+        }
+        catch(_) {}
+    });
     
-    let current = object;
-    while (Object.getPrototypeOf(current) !== null 
-           && !current.hasOwnProperty(Symbol.toStringTag))
-        current = Object.getPrototypeOf(current);
-
-    let temp;
-    if (typeof current[Symbol.toStringTag] === "string") {
-        temp = current[Symbol.toStringTag];
-        delete current[Symbol.toStringTag];
-    }
-
-    result = {}.toString.call(object) === `[object ${type}]`;
-
-    if (temp !== undefined) current[Symbol.toStringTag] = temp;
-
     return result;
 }
-
-const is = Object.create(null);
-
-nativeTypes.forEach(type => {
-    name = type.substring(0, 1).toLowerCase() + type.substring(1);
-    is[name] = getTypeChecker(type);
-});
-
-export default is;
 ```
 
-Then we can use `is` like so:
-
-```javascript
-import is from "./type-check";
-
-const arr = [];
-console.log(is.array(arr));  // true
-arr[Symbol.toStringTag] = "Date";
-console.log(Object.prototype.toString.call(arr));  // "[object Date]"
-is.array(arr);  // true
-
-const obj = { [Symbol.toStringTag]: "Array" };
-console.log(Object.prototype.toString.call(obj));  // "[object Array]"
-is.array(obj);  // false
-```
+This is terrible because it adds a lot of complexity and it is not any more reliable than the previous. If the user assigns a non-configurable, non-writeable `Symbol.toStringTag` anywhere in the prototype chain, then the stricter test fails. We might as well have just used `Object.prototype.toString.call(object) === "[object <Type>]`.
 
 # Calling native methods
 
