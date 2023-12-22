@@ -109,7 +109,12 @@ Then we can use `is` like so:
 ```javascript
 import is from "./type-check";
 
-console.log(is.array([]));  // true
+const arr = [];
+console.log(is.array(arr));  // true
+arr[Symbol.toStringTag] = "Date";
+console.log(Object.prototype.toString.call(arr));  // "[object Date]"
+is.array(arr);  // true
+
 const obj = { [Symbol.toStringTag]: "Array" };
 console.log(Object.prototype.toString.call(obj));  // "[object Array]"
 is.array(obj);  // false
