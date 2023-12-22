@@ -35,13 +35,13 @@ Something stricter would be a function like the following:
 
 ```javascript
 function isType(object, type) {
-    let temp;
-    let object;
-
-    while (Object.getPrototypeOf(object) !== null 
-           && !current.hasOwnProperty(Symbol.toStringTag))
-        current = Object.getPrototypeOf(object);
     
+    let current = object;
+    while (Object.getPrototypeOf(current) !== null 
+           && !current.hasOwnProperty(Symbol.toStringTag))
+        current = Object.getPrototypeOf(current);
+
+    let temp;
     if (typeof current[Symbol.toStringTag] === "string") {
         temp = current[Symbol.toStringTag];
         delete current[Symbol.toStringTag];
@@ -75,13 +75,13 @@ const nativeTypes = [
 ];
 
 const getTypeChecker = type => object => {
-    let temp;
+    
     let current = object;
-
     while (Object.getPrototypeOf(current) !== null 
            && !current.hasOwnProperty(Symbol.toStringTag))
         current = Object.getPrototypeOf(current);
-    
+
+    let temp;
     if (typeof current[Symbol.toStringTag] === "string") {
         temp = current[Symbol.toStringTag];
         delete current[Symbol.toStringTag];
