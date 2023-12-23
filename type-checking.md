@@ -1,4 +1,4 @@
-I am aware of four ways to type-check objects in JavaScript. Only of them works consistently, but only with custom objects. The other three methods, while unreliable, can be used with JavaScript's native objects. So we should understand all of the approaches.
+I am aware of many ways to type-check objects in JavaScript. There are all unreliable, except for one which actually works consistently, but only with custom objects. The other methods, while unreliable, can be used with JavaScript's native objects. So we it is good to understand all of the approaches.
 
 # `instanceof`
 
@@ -29,9 +29,7 @@ date[Symbol.toStringTag] = "Foo";
 console.log(Object.prototype.toString.call(date));  // "[object Foo]"
 ```
 
-It is very easy to pretend to be a native class when you are not by overriding the `Symbol.toStringTag` property on an object. It is also easy to make a native class pretend not to be a native class.
-
-Something stricter would be a function like the following:
+It is very easy to pretend to be a native class when you are not by overriding the `Symbol.toStringTag` property on an object. It is also easy to make a native class pretend not to be a native class. We might think to make an algorithm which can type check `Array`, `Function`, `Error`, `Boolean`, `Number`, `String`, `Date`, `RegExp`, `Object`, or `arguments` by creating a function which deletes the `Symbol.toStringTag` property before calling `Object.prototype.toString.call`. This might look like
 
 ```javascript
 function isType(object, type) {
@@ -53,29 +51,8 @@ function isType(object, type) {
             // but remember its value so we can assign it back
             temps.push([current, current[Symbol.toStringTag]]);
 
-            // if we can't delete it, try making it writeable
-            if (!(delete current[Symbol.toStringTag])) {
-                try {
-                    Object.defineProperty(current, Symbol.toStringTag, {
-                        writeable: true
-                    });
-                    delete current[Symbol.toStringTag];
-                }
-                catch(_) {
-                    try {
-                        // if that didn't work, try making accessor
-                        Object.defineProperty(current, Symbol.toStringTag, {
-                            get() {
-                                return;
-                            }
-                        });
-                    }
-                    catch(_) {
-                        // if that didn't work, give up
-                        break;
-                    }
-                }
-            }   
+            // if we can't delete it, give up
+            if (!(delete current[Symbol.toStringTag])) break;
         }
     }
 
@@ -92,9 +69,10 @@ function isType(object, type) {
 }
 ```
 
-This is terrible because it adds a lot of complexity and it is not any more reliable than the previous. If the user assigns a non-configurable, non-writeable `Symbol.toStringTag` anywhere in the prototype chain, then the stricter test fails. We might as well have just used `Object.prototype.toString.call(object) === "[object <Type>]"`.
+This is terrible because it is complex, but not reliable. If the user assigns a non-configurable `Symbol.toStringTag` anywhere in the prototype chain, then this function fails. Instead, we might as well just use `Object.prototype.toString.call(object) === "[object <Type>]"`.
 
-More recent native classes like `Map` and `Set` have a non-writeable `Symbol.toStringTag` in their prototype which forces `Object.prototype.toString.call(object)` to return a specific string. But the property is configurable, so you can still change it by manipulating its property descriptor. So, this method is just as insecure as `instanceof`.
+More recent native classes like `Map` and `Set` have a non-writeable `Symbol.toStringTag` in their prototype which forces `Object.prototype.toString.call(object)` to return a specific string. But the property is configurable, so you can still change it by manipulating its property descriptor.
+
 
 # Calling native methods
 
