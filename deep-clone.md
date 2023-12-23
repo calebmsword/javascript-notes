@@ -126,17 +126,26 @@ while (Object.getPrototypeOf(tempOriginal) !== null
 
 You could also modify this to copy any link in the chain that doesn't have methods instead of just stopping at the first prototype with methods.
 
-Now, let's discuss `structuredClone` and its strange handling of prototypes. If it recognizes that the object to clone has the prototype of a native JavaScript API (`RegExp`, `Date`, `Map`, `Set`, `TypeArray`, etc...), then the cloned object will inherit that prototype. But if the prototype is not that of some recognized JavaScript API, the prototype of the cloned object will be `Object.prototype`.
+Now, let's discuss `structuredClone` and its strange handling of prototypes. If it recognizes that the object was created with a native JavaScript constructor function (`RegExp`, `Date`, `Map`, `Set`, `TypeArray`, etc...), then the cloned object will inherit the prototype of that function. Otherwise, the prototype of the cloned object will be `Object.prototype`.
 
 Sharing the prototype with the original requires trust. But `structuredClone` uses an algorithm which affords minimal trust. Native JavaScript classes have methods which only access data through `this` and arguments passed to the function. If your prototype is that of a native JavaScript API, then `structuredClone` can guarantee that the methods in the prototype access data safely. An unrecognized prototype might not do the same, so `structuredClone` errs on the side of caution. Unrecognized prototypes are not inherited in the clone.
 
-I have mixed feelings on `structuredClone`'s refusal to inherit unrecognized prototypes. I wish the function had been named something different and could optionally be run in a mode that always copies the prototype.
+There is a strange feature with `structuredClone`. It is because `structuredClone` does not actually observe the prototype of the object it clones. Here is a simple example:
+
+```javascript
+const map = new Map();
+Object.setPrototypeOf(map, Object.prototype);
+const clonedMap = structuredClone(map);
+console.log(Object.getPrototypeOf(map) === Map.prototype);  // true
+```
+
+The cloned object can have a different prototype than that of the original prototype, even if original object has a native prototype. This is a bug.
 
 ### deep clone and WeakMaps and WeakSets
 
-WeakMaps and WeakSets should not be cloned. WeakMaps and WeakSets contain weak references to the objects given to them, meaning that the object can still get garbage collected in the future. Suppose we tried to clone the data in a WeakMap, and one of its objects is about to get garbage-collected. Should the clone have this data? Should it ignore it? Whatever the answer should be, we cannot know if something will be garbage-collected anyway since the JavaScript specification does not expose this information.
+`WeakMap`s and `WeakSet`s should not be cloned. `WeakMap`s and `WeakSet`s contain weak references to the objects given to them, meaning that the object can still get garbage collected in the future. Suppose we tried to clone the data in a `WeakMap` and one of its objects is about to get garbage-collected. Should the clone have a reference to this objecct? Should it ignore it? Whatever the answer should be, we cannot know if something will be garbage-collected anyway since the JavaScript specification does not expose this information.
 
-`structuredClone` throws if you try to clone WeakMaps or WeakSets, which is one of the few restrictions of `structuredClone` this is also correct for the general use case. It is not even possible to clone WeakMaps or WeakSets anyway because WeakMaps and WeakSets do not provide methods for iterating over all of their data.
+`structuredClone` throws if you try to clone `WeakMap`s or `WeakSet`s. This is one of the few restrictions of `structuredClone` this is correct for the general use case. It is not possible to clone `WeakMap`s or `WeakSet`s anyway because they do not provide methods for iterating over all of their data.
 
 ### deep clone and JavaScript APIs
 
@@ -178,9 +187,7 @@ Spidermonkey's implementation of `structuredClone` does not blow up the call sta
 
 ### deep clone and circular references
 
-Before `structuredClone` was introduced, the most common hack for deep cloning objects was to use `const myClone = JSON.parse(JSON.stringify(myObject))`. This would only work for objects with primitives and/or arrays of primitives. Many JavaScript APIs like `Date` or `RegExp` would be lost in the process. And the hack throws an error if the object had circular references.
-
-It is very easy to create an object which references itself. It is also practical to do so. It is not uncommon for nodes in a graph to have children which point back to that node; `Node`s in the DOM are just one of many practical examples. Therefore, any good cloning algorithm should be able to handle circular references. `structuredClone` does.
+It is very easy to create an object which references itself. It is also practical to do so. In a graph data structure, it is often the case that a node has children which point back to that node. `Node`s in the DOM are just one of many practical examples. Therefore, any good cloning algorithm should be able to handle circular references. `structuredClone` does.
 
 ### cloning JavaScript native APIs
 
@@ -188,7 +195,7 @@ It is very easy to create an object which references itself. It is also practica
 
 JavaScript is a dynamic language with monkeypatching. There is nothing to stop a user from monkeypatching native classes. This can cause a well-designed algorithm to suddenly throw errors when a native class is being cloned. It is also impossible to write a fail-proof method to check if a type is a native object for the same reason. There are some pretty good solutions (`Object.prototype.toString.call`, or the `instanceof` operator, or how some native API's throw if `this` is bound to an unexpected value), but with enough effort, any of these checks can be circumvented. It also possible to create objects which falsely indicate they are a native JavaScript class instance, and there isn't a foolproof way to protect from this.
 
-A cloning algorithm which attempts to clone native JavaScript APIs is an algorithm that trusts the user to leave native JavaScript APIs alone. `structuredClone` supports every API listed [here](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm#supported_types) If the user doesn't monkeypatch them or create objects which falsely indicate they are one them. This is one of the few situations where `structuredClone` affords trust to the user.
+A cloning algorithm which attempts to clone native JavaScript APIs is an algorithm that trusts the user to leave native JavaScript APIs alone. `structuredClone` supports every API listed [here](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm#supported_types) if the user doesn't monkeypatch them or create objects which falsely indicate they are one them. This is one of the few situations where `structuredClone` affords trust to the user.
 
 ### cloning user-created objects
 
@@ -234,7 +241,7 @@ A cloning algorithm should allow for user-injected logic so that users can accou
 
 # So, how do we clone JavaScript objects?
 
-It not possible to properly clone every JavaScript object. If your object has `WeakMap`s or `WeakSet`s, then it cannot be done. If your object has functions, it is often impossible. If your object has a property whose property descriptor includes accessors, then it may also be impossible. Cloning the entire prototype chain is also rarely possible. Most objects inherit from `Object.prototype` which includes native functions which are impossible to clone.
+It not possible to properly clone every JavaScript object. If your object has `WeakMap`s or `WeakSet`s, then it cannot be done. If your object has functions which access their closure, then it is impossible.  If your object has a property whose property descriptor includes accessors, then it may also be impossible. Cloning the entire prototype chain is also rarely possible. Most objects inherit from `Object.prototype` which includes native functions. Native functions are impossible to clone.
 
 It is rare when cloning objects that we ever perform a true clone. Instead, we ignore the prototype chain and simply clone the top-level object in the chain. `structuredClone` can be used for this purpose, but only if the object you wish to clone
  - does not have symbol properties or values
@@ -247,12 +254,12 @@ It is rare when cloning objects that we ever perform a true clone. Instead, we i
  - is not "deeply" nested, where "deep" is on the order of 1500-2000 layers (or you can guarantee that you code will run on a platform whose `structuredClone` implementation is not recursive)
  - does not own properties which contain functions, `WeakMap`s, or `WeakSet`s
 
-then `structuredClone` will clone the top-level object in the prototype chain and ensure that its prototype is native prototype. If `structuredClone` recognizes the object as one of JavaScript's native classes that it supports, then the prototype is that for the class. Otherwise, the prototype will be `Object.prototype`.
+then `structuredClone` will clone the top-level object in the prototype chain. If `structuredClone` recognizes the object as one of JavaScript's native classes that it supports, then the prototype is that for the class. Otherwise, the prototype will be `Object.prototype`.
 
 If these limitations are too strict for your use case, then [my algorithm](https://github.com/calebmsword/clone-deep/tree/main) might suffice. Here are some of its features:
  - The cloned object always shares its prototype with that of the original.
  - The algorithm uses no recursion.
- - My algorithm supports cloning instances of `Map`, `Set`, `TypeArray`, `ArrayBuffer`, `RegExp`, `Error`, `Date`, `Number`, `String`, `Boolean`, `Symbol` and `Object`.
+ - My algorithm supports cloning instances of `Map`, `Set`, `TypeArray` subclasses, `ArrayBuffer`, `RegExp`, `Error`, `Date`, `Number`, `String`, `Boolean`, `Symbol` and `Object`.
  - My algorithm clones property descriptors, non-enumerable properties and retains the extensible, frozen and sealed status of objects.
  - My algorithm clones symbols and symbol properties.
  - My algorithm properly handles circular references.
@@ -260,11 +267,11 @@ If these limitations are too strict for your use case, then [my algorithm](https
  - My algorithm can be enhanced with a "customizer", which is a function that allows the user to inject custom logic. With the customizer, the user can support additional types and override many design decisions if they would like restrictions on what can be cloned.
 
 However, I made my algorithm flexible, perhaps too flexible. I wanted the user to clone anything without causing exceptions to the call stack. Instead, any failures to perform a clone are noisily logged. Here are some of the concessions my algorithm makes for this purpose:
- - WeakMaps or WeakSets are "cloned" as empty objects. When this happens, warnings are noisily logged.
+ - `WeakMap`s or `WeakSet`s are "cloned" as empty objects. When this happens, warnings are noisily logged.
  - Methods are copied over directly. They are not cloned. Whenever this occurs, a warning is noisily logged.
- - My algorithm detects types using `Object.prototype.toString.call`. When unsupported types are detected, the algorithm does not throw an error. They are copied as empty objects and a warning is noisily logged.  
+ - When unsupported types are detected, the algorithm does not throw an error. They are copied as empty objects and a warning is noisily logged.  
  - The algorithm copies property descriptors which contain property accessors. When this happens, a warning is noisily logged.
 
-My algorithm also fails to clone any of the types listed [here](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm#webapi_types) even though `structuredClone` does.
+My algorithm also fails to clone any of the types listed [here](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm#webapi_types) even though `structuredClone` does. You should also know that my algorithm detects types using `Object.prototype.toString.call`. This is not a 100% reliable method for detecting native JavaScript types.
 
-The algorithm was heavily inspired by Lodash's [cloneDeep](https://lodash.com/docs/4.17.15#cloneDeep) method. 
+The algorithm is a heavily modified version of the Lodash's [cloneDeep](https://lodash.com/docs/4.17.15#cloneDeep) method. Huge thanks to the developers of that library.
