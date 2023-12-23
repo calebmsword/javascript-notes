@@ -108,7 +108,7 @@ const myClone = myCloneAlgorithm(myObject);
 
 // This will get non-enumerable properties
 function getAllPropertiesOf(object) {
-    return [...Object.getOwnPropertyNames(object), ...Object.getOwnPropertySymbols(object)]
+    return [...Object.getOwnPropertyNames(object), ...Object.getOwnPropertySymbols(object)];
 }
 
 let tempClone = myClone;
@@ -123,8 +123,6 @@ while (Object.getPrototypeOf(tempOriginal) !== null
     });
 }
 ```
-
-You could also modify this to copy any link in the chain that doesn't have methods instead of just stopping at the first prototype with methods.
 
 Now, let's discuss `structuredClone` and its strange handling of prototypes. If it recognizes that the object was created with a native JavaScript constructor function (`RegExp`, `Date`, `Map`, `Set`, `TypeArray`, etc...), then the cloned object will inherit the prototype of that function. Otherwise, the prototype of the cloned object will be `Object.prototype`.
 
