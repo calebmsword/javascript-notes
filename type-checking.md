@@ -103,7 +103,7 @@ We could create a function like the following which would work for any of the ty
 
 ```javascript
 function wasConstructedBy(object, constructor) {
-  const clone = structuredClone(clone);
+  const clone = structuredClone(object);
   return Object.getPrototypeOf(clone) === constructor.prototype;
 }
 ```
