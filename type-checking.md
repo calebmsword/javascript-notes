@@ -1,12 +1,12 @@
-I am aware of many ways to type-check objects in JavaScript. There are all unreliable, except for one which actually works consistently, but only with custom objects. The other methods, while unreliable, can be used with JavaScript's native objects. So we it is good to understand all of the approaches.
+I am aware of many ways to type-check objects in JavaScript. There are all unreliable, except for one. However, the reliable method does not work with JavaScript's native classes and it only works with custom objects made in a very specific way. Hence, the unreliable methods still have some use.
+
+Also, keep in mind when I say that a JavaScript object is an instance of the class `ClassName`, I am saying that the object was created use the `ClassName` constructor function with the `new` operator. 
 
 # `instanceof`
 
 The `instanceof` operator takes two arguments. `foo instanceof Bar` crawls through `foo`'s prototype chain and returns true if it contains `Bar.prototype`. An error is thrown if `Bar` is not a function.
 
-This operator is a very loose tool for type-checking. It should be named something like `inheritsfrom` or `subclassof`. It isn't specific about the type of the object.
-
-A stricter check would look something like
+This operator would make more sense it was named something like `inheritsfrom` or `subclassof`. It isn't specific about the type of the object since the prototype in question can be anywhere in the prototype chain. A more specific check would look something like
 
 ```javascript 
 function instanceof(object, constructor) {
@@ -14,13 +14,26 @@ function instanceof(object, constructor) {
 }
 ```
 
-This better represents what we think of when we see the word `instanceof`. This function is very specific about the type of the object. This still isn't secure, however, because we could easily change an object's prototype before calling this function to create an artifical result. The object could pretend to have been created from a constructor function that it actually wasn't made from.
+This better represents what we think of when we see the word `instanceof`. But neither the `instanceof` operator or the `instanceof` function are fully reliable because we could easily change an object's prototype before calling this function to create an artifical result. The object could pretend to have been created from a constructor function that it actually wasn't made from.
 
 # `Object.prototype.toString.call`
 
 Try using this function on various objects. The result probably looks something like `"[object Object]"`. If you create an instance of a `Date`, you get `"[object Date]"`.
 
-This is a tempting tool for type-checking native JavaScript classes because the specification requires that many native classes return a specific string. These classes are `Array`, `Function`, `Error`, `Boolean`, `Number`, `String`, `Date`, `RegExp`, `Object`, and the `arguments` object implicitly passed to functions. However, if the object has, anywhere in its prototype chain, the property `Symbol.toStringTag` and its value is a string, the result of `Object.prototype.toString.call` will change. For example:
+This is a tempting tool for type-checking native JavaScript classes because the specification requires `Object.prototype.toString` return specific string values if the `this` is bound to an object created from a particular collection of native JavaScript classes. These classes are `Array`, `Function`, `Error`, `Boolean`, `Number`, `String`, `Date`, `RegExp`, `Object`, and the class whose instances are the `arguments` objects implicitly passed to functions. Then, for example, we could use `Object.prototype.toString.call(myObject) === "[object Array]"` to test if `myObject` were an array, or `Object.prototype.toString.call(myObject) === "[object Date]"` to check if `myObject` were a date, etc. If we want to check if an object is an `arguments` object, then we do `Object.prototype.toString.call(myObject) === "[object Arguments]"`. 
+
+The `instanceof` operator will not recognize if a function was made from a particular constructor if that object has its prototype dynamically changed before the `instanceof` operator is performed. However, `Object.prototype.toString.call` does not use the prototype of the object to determine the string output. For example,
+
+```javascript
+const date = new Date();
+console.log(Object.prototype.toString.call(date));  // "[object Date]"
+Object.setPrototypeOf(date, Object.prototype);
+console.log(Object.prototype.toString.call(date));  // "[object Date]"
+```
+
+It is import to understand that `Object.prototype.toString.call` tells us how the object was constructed. It does not inform us of the object's current prototype. It is possible for it to be different that the `prototype` property of the object's constructor function. 
+
+It seems that `Object.prototype.toString.call` is a reliable method for checking whether an object was constructed from a native JavaScript constructor function. But there is a trivial exploit. The JavaScript specification demands that, if an object has a `Symbol.toStringTag` property whose value is a string anywhere in its prototype chain, then the result of `Object.prototype.toString.call` should change in accordance to that value. For example,
 
 ```javascript
 const date = new Date();
@@ -29,70 +42,77 @@ date[Symbol.toStringTag] = "Foo";
 console.log(Object.prototype.toString.call(date));  // "[object Foo]"
 ```
 
-It is very easy to pretend to be a native class when you are not by overriding the `Symbol.toStringTag` property on an object. It is also easy to make a native class pretend not to be a native class. We might think to make an algorithm which can type check `Array`, `Function`, `Error`, `Boolean`, `Number`, `String`, `Date`, `RegExp`, `Object`, or `arguments` by creating a function which deletes the `Symbol.toStringTag` property before calling `Object.prototype.toString.call`. This might look like
-
-```javascript
-function isType(object, type) {
-
-    let temps = [];
-    let current = object;
-    
-    // get rid of all Symbol.toStringTag properties in the chain
-    while (typeof object[Symbol.toStringTag] === "string") {
-
-        // walk prototypes until we find one that has Symbol.toStringTag property
-        while (Object.getPrototypeOf(current) !== null 
-               && !current.hasOwnProperty(Symbol.toStringTag))
-            current = Object.getPrototypeOf(current);
-
-        // If that Symbol.toStringTag property has a string value, delete it
-        if (typeof current[Symbol.toStringTag] === "string") {
-
-            // but remember its value so we can assign it back
-            temps.push([current, current[Symbol.toStringTag]]);
-
-            // if we can't delete it, give up
-            if (!(delete current[Symbol.toStringTag])) break;
-        }
-    }
-
-    result = {}.toString.call(object) === `[object ${type}]`;
-
-    temps.forEach(([obj, value]) => {
-        try {
-            obj[Symbol.toStringTag] = value;
-        }
-        catch(_) {}
-    });
-    
-    return result;
-}
-```
-
-This is terrible because it is complex, but not reliable. If the user assigns a non-configurable `Symbol.toStringTag` anywhere in the prototype chain, then this function fails. Instead, we might as well just use `Object.prototype.toString.call(object) === "[object <Type>]"`.
+We might think to make an algorithm which can type check `Array`, `Function`, `Error`, `Boolean`, `Number`, `String`, `Date`, `RegExp`, `Object`, or `arguments` by creating a function which deletes the `Symbol.toStringTag` property before calling `Object.prototype.toString.call`. But this won't work if the user assigns a non-configurable `Symbol.toStringTag` anywhere in the prototype chain. No matter we do, the technique is fallible.
 
 More recent native classes like `Map` and `Set` have a non-writeable `Symbol.toStringTag` in their prototype which forces `Object.prototype.toString.call(object)` to return a specific string. But the property is configurable, so you can still change it by manipulating its property descriptor.
 
+Unfortunately, there is an additional exploit that can break this technique: `Object.prototype.toString` can be monkeypatched into any arbitrary function.
 
 # Calling native methods
 
-Most native methods throw errors if the `this` binding is a function whose prototype is not the prototype. For example:
+Most native methods throw errors if the object was not actually created from the constructor for the class. For example:
 
 ```javascript
-const setSubclass = Object.create(Set.prototype);
-try {
-  Set.prototype.has.bind(setSubclass)(null));
-}
-catch(error) {
-  console.log("setSubclass does have Set.prototype as its prototype.");
+const actualDate = new Date();
+
+const fakeDate = {};
+Object.setPrototypeOf(fakeDate, Date.prototype);
+
+Date.prototype.getDay.call(actualDate);
+Date.prototype.getDay.call(fakeDate);  // throws
+```
+
+`Map`, `Set`, `Array`, and most other native JavaScript classes have similar behavior. Following the previous example, we could create a function like the following to check if an object was a `Map` instance:
+
+```javascript
+function isMap(object) {
+  try {
+    Map.prototype.has.call(object);
+    return true;
+  }
+  catch(error) {
+    return false;
+  }
 }
 ```
 
-This is also not secure because we could monkeypatch `Set.prototype` to throw errors when it shouldn't, or to not throw errors at all when it should.
+This technique is quite good. Unfortunately, it is also fallible. The user could overwrite `Map.prototype` to throw errors when it shouldn't, for example. 
+
+# structuredClone
+
+This is the hackiest hack in this document.
+
+`structuredClone` is a native JavaScript global function which deeply-clones objects. The prototype chain of the object is not cloned. Instead, if the object was created using the constructor function for any of its [supported classes](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm#supported_types), the cloned object receives the prototype of the constructor function which created the object.
+
+```javascript
+const map = new Map();
+const clone = structuredClone(map);
+console.log(Object.getPrototypeOf(clone) === Map.prototype));  // true
+```
+
+Strangely, this still occurs even if the cloned object changes its prototype.
+
+```javascript
+const map = new Map();
+Object.setPrototypeOf(map, Object.prototype);
+const clone = structuredClone(map);
+console.log(Object.getPrototypeOf(clone) === Map.prototype));  // true
+```
+
+We could create a function like the following which would work for any of the types supported in the structured clone algorithm:
+
+```javascript
+function wasConstructedBy(object, constructor) {
+  const clone = structuredClone(clone);
+  return Object.getPrototypeOf(clone) === constructor.prototype;
+}
+```
+
+This is quite a good technique. However, `structuredClone` can be monkeypatched arbitrarily, so it is not foolproof.
 
 # The One True Type Check
 
-The only secure method I am aware can be performed with factories. For example:
+The only secure method I am aware of can be performed with factories. For example:
 
 ```javascript
 // my-object.js
@@ -150,3 +170,20 @@ wrapper.set({ foo: "bar" });
 console.log(wrapper.get());  // { foo: "bar" }
 console.log(isWrapper(wrapper));  // true
 ```
+
+This can be easily used with ES6 classes.
+
+```javascript
+import getTypeCheckableFactory from "./utils";
+import MyClass from "./my-class";
+
+const { getMyClass, isMyClass } = getTypeCheckableFactory("MyClass", (...args) => new MyClass(...args));
+```
+
+# Summary
+
+- We can use `instanceof` to check if an object has a specific prototype in its prototype chain.
+- We can use `Object.prototype.toString.call` to check if an object was created using a native JavaScript constructor function.
+- We can get a method from a native prototype, bind it to our object, and then call the bound method to check check if an object was created using a native JavaScript constructor function.
+- We can clone an object with `structuredClone` and check the clone's prototype to see if the object was constructed as one of JavaScript's native classes.
+- For custom types created by an object factory, we get foolproof type checking of custom types if a factory function stores all the objects it creates in an encapsulated registry.  
