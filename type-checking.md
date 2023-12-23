@@ -108,7 +108,7 @@ function wasConstructedBy(object, constructor) {
 }
 ```
 
-This is quite a good technique. However, `structuredClone` can be monkeypatched arbitrarily, so it is not foolproof.
+This is quite a good technique. However, `structuredClone` can be monkeypatched arbitrarily, so it is not foolproof. `structuredClone` can also be an expensive operation if the cloned object has many properties or is deepy nested.
 
 # The One True Type Check
 
