@@ -182,8 +182,8 @@ const { getMyClass, isMyClass } = getTypeCheckableFactory("MyClass", (...args) =
 
 # Summary
 
-- We can use `instanceof` to check if an object has a specific prototype in its prototype chain.
-- We can use `Object.prototype.toString.call` to check if an object was created using a native JavaScript constructor function.
-- We can get a method from a native prototype, bind it to our object, and then call the bound method to check check if an object was created using a native JavaScript constructor function.
-- We can clone an object with `structuredClone` and check the clone's prototype to see if the object was constructed as one of JavaScript's native classes.
+- We can use `instanceof` to check if an object has a prototype of a constructor function in its prototype chain.
+- We can use `Object.prototype.toString.call` to check if an object was created using a native JavaScript constructor function. This is not reliable if the user adds a non-configurable `Symbol.toStringTag` property or, if one is already present, the user changes its value.
+- We can get a method from a native prototype, bind it to our object, and then call the bound method. If the method throws, then we know that the object was not created with the constructor for that prototype. This is not reliable if the user monkeypatches the implementation of the prototype.
+- We can clone an object with `structuredClone` and check the clone's prototype to see if the object was constructed as one of JavaScript's native classes. But this can be an expensive operation, and the `structuredClone` global function can be arbitrarily monkeypatched.
 - For custom types created by an object factory, we get foolproof type checking of custom types if a factory function stores all the objects it creates in an encapsulated registry.  
