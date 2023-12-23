@@ -14,7 +14,7 @@ function instanceof(object, constructor) {
 }
 ```
 
-This better represents what we think of when we see the word `instanceof`. This function is very specific about the type of the object. This still isn't secure, however, because we could easily change an object's prototype before calling this function to create an artifical result.
+This better represents what we think of when we see the word `instanceof`. This function is very specific about the type of the object. This still isn't secure, however, because we could easily change an object's prototype before calling this function to create an artifical result. The object could pretend to have been created from a constructor function that it actually wasn't made from.
 
 # `Object.prototype.toString.call`
 
