@@ -141,7 +141,7 @@ function getTypeCheckableFactory(name, factory) {
             registry.add(result);
             return result;
         },
-        [`is${Name}`](candidate) {
+        [`is${name}`](candidate) {
             return registry.has(candidate);
         }
     };
