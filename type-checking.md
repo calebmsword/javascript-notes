@@ -1,6 +1,6 @@
 I am aware of many ways to type-check objects in JavaScript. There are all unreliable, except for one. However, the reliable method does not work with JavaScript's native classes and it only works with custom objects made in a very specific way. Hence, the unreliable methods still have some use.
 
-Also, keep in mind when I say that a JavaScript object is an instance of the class `ClassName`, I am saying that the object was created use the `ClassName` constructor function with the `new` operator. 
+Also, keep in mind when I say that a JavaScript object is an instance of the class `ClassName`, I am saying that the object was created with the `ClassName` constructor function using the `new` operator. 
 
 # `instanceof`
 
