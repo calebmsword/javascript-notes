@@ -4,7 +4,7 @@ Also, keep in mind when I say that a JavaScript object is an instance of the cla
 
 # `instanceof`
 
-The `instanceof` operator takes two arguments. `foo instanceof Bar` crawls through `foo`'s prototype chain and returns true if it contains `Bar.prototype`. An error is thrown if `Bar` is not a function.
+The `instanceof` operator takes two arguments. `foo instanceof Bar` crawls through `foo`'s prototype chain and returns true if it contains `Bar.prototype`. An error is thrown if `Bar` is not a suitable constructor function.
 
 This operator would make more sense it was named something like `inheritsfrom` or `subclassof`. It isn't specific about the type of the object since the prototype in question can be anywhere in the prototype chain. A more specific check would look something like
 
