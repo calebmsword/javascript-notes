@@ -123,13 +123,20 @@ The only secure method I am aware of can be performed with factories. For exampl
 
 const registry = new WeakSet();
 
-export const getMyObject = () => {
+const getMyObject = () => {
   myObject = Object.freeze({ foo: "bar" });
   registry.add(myObject);
   return myObject;
 }
 
-export const isMyObject = candidate => registry.has(candidate);
+const isMyObject = candidate => registry.has(candidate);
+
+const myObjectFactory = Object.freeze({
+  getMyObject,
+  isMyObject
+});
+
+export default myObjectFactory;
 ```
 
 If we do not export the registry from this module, it is safely encapsulated. Then `isMyObject` is a foolproof way to check if an object was created from the `getMyObject` factory.
