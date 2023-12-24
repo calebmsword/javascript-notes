@@ -147,7 +147,7 @@ I have already found myself using this pattern multiple times. It has reached th
 function getTypeCheckableFactory(factory) {
     const registry = WeakSet();
     return Object.freeze({
-        get(...args) {
+        create(...args) {
             const result = factory(..args);
             registry.add(result);
             return result;
@@ -176,7 +176,7 @@ const wrapperFactory = getTypeCheckableFactory(() => {
     }
 });
 
-const wrapper = wrapperFactory.get();
+const wrapper = wrapperFactory.create();
 wrapper.set({ foo: "bar" });
 console.log(wrapper.get());  // { foo: "bar" }
 console.log(wrapperFactory.has(wrapper));  // true
