@@ -92,16 +92,16 @@ let tempClone = myClone;
 let tempOriginal = myObject;
 
 // We can't clone native JavaScript methods, so stop if we hit Object.prototype
-while (![null, Object.prototype].includes(Object.getPrototypeOf(tempOriginal))) { 
+while (Object.getPrototypeOf(tempOriginal) !== null) { 
     const newPrototype = myCloneAlgorithm(Object.getPrototypeOf(tempOriginal));
     Object.setPrototypeOf(tempClone, newPrototype);
-    [tempClone, tempOriginal].forEach(temp => {
-        temp = Object.getPrototypeOf(temp);
-    });
+    
+    tempClone = Object.getPrototypeOf(tempClone);
+    tempOriginal = Object.getPrototypeOf(tempOriginal);
 }
 ```
 
-This approach won't be perfect. You are very likely to encounter a native JavaScript prototype somewhere in the process such as `Object.prototype`. These prototypes typically have methods, but you can't clone native methods. It might be better to stop once you reach any prototype with methods on it.
+This approach won't be perfect. You are very likely to encounter a native JavaScript prototype somewhere in the process such as `Object.prototype`. These prototypes typically have methods, and you can't clone native methods. It might be better to stop once you reach any prototype with methods on it.
 
 ```javascript
 const myClone = myCloneAlgorithm(myObject);
@@ -111,16 +111,20 @@ function getAllPropertiesOf(object) {
     return [...Object.getOwnPropertyNames(object), ...Object.getOwnPropertySymbols(object)];
 }
 
+function hasMethods(object) {
+    getAllPropertiesOf(object).some(key => typeof object[key] === "function");
+}
+
 let tempClone = myClone;
 let tempOriginal = myObject;
 while (Object.getPrototypeOf(tempOriginal) !== null
-       && getAllPropertiesOf(tempOriginal).every(prop =>
-           tempOriginal[prop] !== "function")) {
+       && !hasMethods(Object.getPrototypeOf(tempOriginal))) {
+    
     const newPrototype = myCloneAlgorithm(Object.getPrototypeOf(tempOriginal));
     Object.setPrototypeOf(tempClone, newPrototype);
-    [tempClone, tempOriginal].forEach(temp => {
-        temp = Object.getPrototypeOf(temp);
-    });
+
+    tempClone = Object.getPrototypeOf(tempClone);
+    tempOriginal = Object.getPrototypeOf(tempOriginal);
 }
 ```
 
@@ -137,7 +141,7 @@ const clonedMap = structuredClone(map);
 console.log(Object.getPrototypeOf(map) === Map.prototype);  // true
 ```
 
-The cloned object can have a different prototype than that of the original prototype, even if original object has a native prototype. This is a bug.
+The cloned object can have a different prototype than that of the original prototype, even if original object has a native prototype. I cannot tell whether this is a bug or a feature.
 
 ### deep clone and WeakMaps and WeakSets
 
@@ -185,13 +189,13 @@ Spidermonkey's implementation of `structuredClone` does not blow up the call sta
 
 ### deep clone and circular references
 
-It is very easy to create an object which references itself. It is also practical to do so. In a graph data structure, it is often the case that a node has children which point back to that node. `Node`s in the DOM are just one of many practical examples. Therefore, any good cloning algorithm should be able to handle circular references. `structuredClone` does.
+It is very easy to create an object which references itself. It is also practical to do so. In a graph data structure, it is often the case that a node has children which point back to that node. `Node`s in the DOM are just one of many practical examples. `structuredClone` correctly handles circular references. 
 
 ### cloning JavaScript native APIs
 
 `structuredClone` ensures that `Date`s, `TypeArray`s, `RegExp`s, `Maps`, and `Sets` are all cloned properly. However, this requires checking the type of the class being cloned.
 
-JavaScript is a dynamic language with monkeypatching. There is nothing to stop a user from monkeypatching native classes. This can cause a well-designed algorithm to suddenly throw errors when a native class is being cloned. It is also impossible to write a fail-proof method to check if a type is a native object for the same reason. There are some pretty good solutions (`Object.prototype.toString.call`, or the `instanceof` operator, or how some native API's throw if `this` is bound to an unexpected value), but with enough effort, any of these checks can be circumvented. It also possible to create objects which falsely indicate they are a native JavaScript class instance, and there isn't a foolproof way to protect from this.
+JavaScript is a dynamic language with monkeypatching. There is nothing to stop a user from monkeypatching native classes. This can cause a well-designed algorithm to suddenly throw errors when a native class is being cloned. It is also impossible to write a fail-proof method to check if a type is a native object for the same reason. There are some pretty good solutions (`Object.prototype.toString.call`, or the `instanceof` operator, or how some native API's throw if `this` is bound to an unexpected value), but with enough effort, any of these checks can be circumvented. It also possible to create objects which falsely indicate they are a native JavaScript class instance.
 
 A cloning algorithm which attempts to clone native JavaScript APIs is an algorithm that trusts the user to leave native JavaScript APIs alone. `structuredClone` supports every API listed [here](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm#supported_types) if the user doesn't monkeypatch them or create objects which falsely indicate they are one them. This is one of the few situations where `structuredClone` affords trust to the user.
 
@@ -239,7 +243,7 @@ A cloning algorithm should allow for user-injected logic so that users can accou
 
 # So, how do we clone JavaScript objects?
 
-It not possible to properly clone every JavaScript object. If your object has `WeakMap`s or `WeakSet`s, then it cannot be done. If your object has functions which access their closure, then it is impossible.  If your object has a property whose property descriptor includes accessors, then it may also be impossible. Cloning the entire prototype chain is also rarely possible. Most objects inherit from `Object.prototype` which includes native functions. Native functions are impossible to clone.
+It not possible to properly clone every JavaScript object. If your object has `WeakMap`s or `WeakSet`s, then it cannot be done. If your object has functions which access their closure, then it is almost always impossible. If your object has a property whose property descriptor includes accessors, then it may also be impossible. Cloning the entire prototype chain is also rarely possible. Most objects inherit from `Object.prototype` which includes native functions. Native functions are impossible to clone.
 
 It is rare when cloning objects that we ever perform a true clone. Instead, we ignore the prototype chain and simply clone the top-level object in the chain. `structuredClone` can be used for this purpose, but only if the object you wish to clone
  - does not have symbol properties or values
