@@ -16,15 +16,17 @@ Object.defineProperty(Bar, Symbol.hasInstance, {
 });  // this works
 ```
 
-Unfortunately, native JavaScript classes can have the `Symbol.hasInstance` property modified with `Object.defineProperty`. This means we can't fully rely on `instanceof` to have the default behavior we expect.
+Any instance of a native JavaScript class can customize the behavior of `instanceof` during runtime meaning that `instanceof` can be unpredictable.
+
+The default behavior of the `instanceof` operator is often not preferable anyway. Usually, given some `object` and a `Constructor`, we want the more specific check `Object.getPrototypeOf(object) === Constructor.prototype` instead of knowing if the prototype is somewhere in the prototype chain. 
 
 # `Object.prototype.toString.call`
 
 Try using this function on various objects. The result probably looks something like `"[object Object]"`. If you create an instance of a `Date`, you get `"[object Date]"`.
 
-This is a tempting tool for type-checking native JavaScript classes because the specification requires `Object.prototype.toString` return specific string values if the `this` is bound to an object created from a particular collection of native JavaScript classes. These classes are `Array`, `Function`, `Error`, `Boolean`, `Number`, `String`, `Date`, `RegExp`, `Object`, and the class whose instances are the `arguments` objects implicitly passed to functions. Then, for example, we could use `Object.prototype.toString.call(myObject) === "[object Array]"` to test if `myObject` were an array, or `Object.prototype.toString.call(myObject) === "[object Date]"` to check if `myObject` were a date, etc. If we want to check if an object is an `arguments` object, then we do `Object.prototype.toString.call(myObject) === "[object Arguments]"`. 
+This is a popular tool for type-checking native JavaScript classes because the specification requires that `Object.prototype.toString` return specific string values if `this` is bound to any of a particular collection of native JavaScript class instances. These classes are `Array`, `Function`, `Error`, `Boolean`, `Number`, `String`, `Date`, `RegExp`, `Object`, and the class whose instances are the `arguments` objects implicitly passed to functions. Then, for example, we could use `Object.prototype.toString.call(myObject) === "[object Array]"` to test if `myObject` were an array, or `Object.prototype.toString.call(myObject) === "[object Date]"` to check if `myObject` were a date, etc. If we want to check if an object is an `arguments` object, then we do `Object.prototype.toString.call(myObject) === "[object Arguments]"`. 
 
-The `instanceof` operator will not recognize if a function was made from a particular constructor if that object has its prototype dynamically changed before the `instanceof` operator is performed. However, `Object.prototype.toString.call` does not use the prototype of the object to determine the string output. For example,
+The default behavior of the `instanceof` operator will not correctly recognize the constructor which made an object if that object has its prototype dynamically changed before the `instanceof` operator is used. However, `Object.prototype.toString.call` does not use the prototype of the object to determine the string output. For example,
 
 ```javascript
 const date = new Date();
@@ -44,7 +46,7 @@ date[Symbol.toStringTag] = "Foo";
 console.log(Object.prototype.toString.call(date));  // "[object Foo]"
 ```
 
-We might think to make an algorithm which can type check `Array`, `Function`, `Error`, `Boolean`, `Number`, `String`, `Date`, `RegExp`, `Object`, or `arguments` by creating a function which deletes the `Symbol.toStringTag` property before calling `Object.prototype.toString.call`. But this won't work if the user assigns a non-configurable `Symbol.toStringTag` anywhere in the prototype chain. No matter what we do, the technique is fallible.
+We might think to make an algorithm which which deletes any `Symbol.toStringTag` property in the prototype chain before calling `Object.prototype.toString.call`. But this won't work if the user assigns a non-configurable `Symbol.toStringTag` anywhere in the prototype chain. No matter what we do, the result of `Object.prototype.toString.call` can be arbitrarily overridden by an irresponsible `Symbol.toStringTag` property.
 
 More recent native classes like `Map` and `Set` have a non-writeable `Symbol.toStringTag` in their prototype which forces `Object.prototype.toString.call(object)` to return a specific string. But the property is configurable, so you can still change it by manipulating its property descriptor.
 
@@ -92,7 +94,7 @@ const clone = structuredClone(map);
 console.log(Object.getPrototypeOf(clone) === Map.prototype));  // true
 ```
 
-Strangely, this still occurs even if the cloned object changes its prototype.
+Strangely, this still occurs even if the original object had its prototype changed.
 
 ```javascript
 const map = new Map();
@@ -143,7 +145,7 @@ function getTypeCheckableFactory(factory) {
             registry.add(result);
             return result;
         },
-        is(candidate) {
+        has(candidate) {
             return registry.has(candidate);
         }
     });
@@ -170,7 +172,7 @@ const wrapperFactory = getTypeCheckableFactory(() => {
 const wrapper = wrapperFactory.get();
 wrapper.set({ foo: "bar" });
 console.log(wrapper.get());  // { foo: "bar" }
-console.log(wrapperFactory.is(wrapper));  // true
+console.log(wrapperFactory.has(wrapper));  // true
 ```
 
 This can be easily used with ES6 classes.
