@@ -165,7 +165,7 @@ However, the native deep-clone algorithm should have preserved enumerability, co
 
 ### deep clone, symbol properties, and non-enumerable properties
 
-Unforunately, `structuredClone` will not copy any properties on an object that are symbols. The previous discussion on symbols should make it clear why this is case.
+Unfortunately, `structuredClone` will not copy any properties on an object that are symbols. The previous discussion on symbols should make it clear why this is case.
 
 It also ends up that `structuredClone` *ignores* non-enumerable properties. It is extremely unfortunate that the only native deep-copy method JavaScript forces this restriction.
 
