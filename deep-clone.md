@@ -72,7 +72,7 @@ function getIterator() {
 
 The functions returned by `getIterator` still access data in their closure, but that closure in contained within the factory. Every call of `getIterator` creates a new `i` variable, so every iterator accesses different data. If we use the "registry" technique showed in the repeater example, then iterators could also be cloned.
 
-Unfortunately, there is no way to tell `structuredClone` about function factories, so well-designed factory functions cannot have their spawn be cloned with `structuredClone`. We should have an algorithm would allow for user-injected logic so that we could correctly clone functions from well-designed factories.
+Unfortunately, there is no way to tell `structuredClone` about function factories, so well-designed factory functions cannot have their spawn be cloned with `structuredClone`. We should have an algorithm that allows for user-injected logic so that we could correctly clone functions from well-designed factories.
 
 ### deep clone and the prototype chain
 
