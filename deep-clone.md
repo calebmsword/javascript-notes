@@ -91,7 +91,6 @@ const myClone = myCloneAlgorithm(myObject);
 let tempClone = myClone;
 let tempOriginal = myObject;
 
-// We can't clone native JavaScript methods, so stop if we hit Object.prototype
 while (Object.getPrototypeOf(tempOriginal) !== null) { 
     const newPrototype = myCloneAlgorithm(Object.getPrototypeOf(tempOriginal));
     Object.setPrototypeOf(tempClone, newPrototype);
