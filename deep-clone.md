@@ -1,6 +1,6 @@
 I recently wanted to deep copy a JavaScript object. In the process, I discovered that this is a complex and interesting problem. JavaScript provides a native solution through the `structuredClone` method available on the global object, but it has many limitations. In this document, I was discuss the potential pitfalls of a deep-clone algorithm as well as the design decisions that such an algorithm must make. In the process, we will see `structuredClone`'s strange design choices and my opinions on them. I will also share a custom deep clone algorithm I made that has less limitations than that of `structuredClone`.
 
-### deep clone, symbols, and serialization
+## deep clone, symbols, and serialization
 
 `structuredClone` is restrictive on what can be cloned because it employs the [structured clone algorithm](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm). You can find the official specification of the structured clone algorithm [here](https://html.spec.whatwg.org/multipage/structured-data.html#safe-passing-of-structured-data). The structured clone algorithm is used in many situations where an object is serialized or deserialized to some recipient. An example would be when `postMessage` is called in a Web Worker, which is used to send an object from the Web Worker to the main thread. Another example is when you use the IndexedDB API to save an object in storage. In short, the structured clone algorithm will only clone objects which can be safely serialized.
 
@@ -12,7 +12,7 @@ Immediately, we see the design flaw of `structuredClone`. It is not a function w
 
 The problem is that they stopped there. It would have been nice if the committee which introduced `structuredClone` took the time to extend the functionality to solve a wider collection of use cases. Instead, we are given a function that cannot clone one of the basic primitive types in JavaScript.
 
-### deep clone and functions
+## deep clone and functions
 
 `structuredClone` will also throw if it tries to clone an object which contains functions. This is a reasonable design decision because it is *not always possible to deeply clone a function*.
 
@@ -74,7 +74,7 @@ The functions returned by `getIterator` still access data in their closure, but 
 
 Unfortunately, there is no way to tell `structuredClone` about function factories, so well-designed factory functions cannot have their spawn be cloned with `structuredClone`. We should have an algorithm that allows for user-injected logic so that we could correctly clone functions from well-designed factories.
 
-### deep clone and the prototype chain
+## deep clone and the prototype chain
 
 I believe that a cloning algorithm should NOT clone the prototype chain. Instead, let the cloned object share the same prototype as the original.
 
@@ -142,19 +142,19 @@ console.log(Object.getPrototypeOf(map) === Map.prototype);  // true
 
 The cloned object can have a different prototype than that of the original prototype, even if original object has a native prototype. I cannot tell whether this is a bug or a feature.
 
-### deep clone and WeakMaps and WeakSets
+## deep clone and WeakMaps and WeakSets
 
 `WeakMap`s and `WeakSet`s should not be cloned. `WeakMap`s and `WeakSet`s contain weak references to the objects given to them, meaning that the object can still get garbage collected in the future. Suppose we tried to clone the data in a `WeakMap` and one of its objects is about to get garbage-collected. Should the clone have a reference to this objecct? Should it ignore it? Whatever the answer should be, we cannot know if something will be garbage-collected anyway since the JavaScript specification does not expose this information.
 
 `structuredClone` throws if you try to clone `WeakMap`s or `WeakSet`s. This is one of the few restrictions of `structuredClone` this is correct for the general use case. It is not possible to clone `WeakMap`s or `WeakSet`s anyway because they do not provide methods for iterating over all of their data.
 
-### deep clone and JavaScript APIs
+## deep clone and JavaScript APIs
 
 Cloning algorithms, for the most part, walk through all of the properties contained in the object and copy their values. Then the algorithm sees if any of the properties contain properties and clones those. The process continues until everything is cloned.
 
 However, some data is not accessible through properties. ES6 Maps, for example, have data that can only be accessed through the `get` method. Care must be taken with native JavaScript APIs which access hidden data to ensure that data is cloned properly.
 
-### deep clone and metadata
+## deep clone and metadata
 
 If your object is inextensible, sealed, and/or frozen, the "clone" returned by `structuredClone` will not be. Perhaps the designers of the structured clone algorithm believed it didn't make sense for serializable data to be immutable and that the recipient should be free to do whatever they like with it. Whatever the reason for this design choice, I wish that the native deep-clone function in JavaScript didn't share this behavior.
 
@@ -162,13 +162,13 @@ The property descriptor for any object is also ignored. I believe the reason for
 
 However, the native deep-clone algorithm should have preserved enumerability, configurability, and writeability. It would be acceptable if it threw errors if any property descriptor contained accessors, but I also wouldn't mind if it trusted the user to clone objects with safe acessors.
 
-### deep clone, symbol properties, and non-enumerable properties
+## deep clone, symbol properties, and non-enumerable properties
 
 Unfortunately, `structuredClone` will not copy any properties on an object that are symbols. The previous discussion on symbols should make it clear why this is case.
 
 It also ends up that `structuredClone` *ignores* non-enumerable properties. It is extremely unfortunate that the only native deep-copy method JavaScript forces this restriction.
 
-### deep clone and recursion
+## deep clone and recursion
 
 Unforunately, V8's implementation of `structuredClone` is recursive. This means that a deeply nested object can blow up the call stack.
 
@@ -186,11 +186,11 @@ const clonedObj = structuredClone(obj);
 
 Spidermonkey's implementation of `structuredClone` does not blow up the call stack. I hope that V8 eventually follows suit.
 
-### deep clone and circular references
+## deep clone and circular references
 
 It is very easy to create an object which references itself. It is also practical to do so. In a graph data structure, it is often the case that a node has children which point back to that node. `Node`s in the DOM are just one of many practical examples. `structuredClone` correctly handles circular references. 
 
-### cloning JavaScript native APIs
+## cloning JavaScript native APIs
 
 `structuredClone` ensures that `Date`s, `TypeArray`s, `RegExp`s, `Maps`, and `Sets` are all cloned properly. However, this requires checking the type of the class being cloned.
 
@@ -198,7 +198,7 @@ JavaScript is a dynamic language with monkeypatching. There is nothing to stop a
 
 A cloning algorithm which attempts to clone native JavaScript APIs is an algorithm that trusts the user to leave native JavaScript APIs alone. `structuredClone` supports every API listed [here](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm#supported_types) if the user doesn't monkeypatch them or create objects which falsely indicate they are one them. This is one of the few situations where `structuredClone` affords trust to the user.
 
-### cloning user-created objects
+## cloning user-created objects
 
 Like with functions, objects can also be cloneable if they are created from well-designed factories. Here is a simple factory which creates a object which wraps an encapsulated value.
 
@@ -240,6 +240,91 @@ function cloneWrapper(wrapper) {
 
 A cloning algorithm should allow for user-injected logic so that users can account for custom types which require specialized logic to clone.
 
+## cloning promises
+
+`structuredClone` does not clone Promises. This makes sense because the Promise constructor takes a function, and we have already discussed the issues with cloning functions.
+
+Suppose we wanted to clone a Promise anyway. It is possible to create a new object which contains the wrapped promise. Here is a simple example:
+
+```javascript
+function clonePromise(promise) {
+    return new Promise((resolve, reject) => promise.then(resolve).catch(reject));
+}
+```
+
+We can use this function like so:
+
+```javascript
+// Creates a promise that resolves after the provided # of milliseconds
+const delay = dt => new Promise(resolve => setTimeout(resolve, dt));
+
+const delay1000 = delay(1000);
+const delay1000Clone = clonePromise(delay1000);
+
+console.log(delay1000 === delay1000Clone);  // false
+
+delay1000.then(() => console.log("original promise settled!");
+delay1000Clone.then(() => console.log("cloned promise settled!");
+```
+
+The new promise simply reports the results of the original promise. The new promise settles when the original settles and fulfills/rejects with the value/reason of the original. Whether this is actually a clone is a philisophical debate. This is also useless because we can stitch as many `.then`s on the original promise as we want, so there is no need to clone a promise in this way:
+
+```javascript
+const delay = delay(1000);
+
+delay.then(() => console.log("This callback will be run when the promise settles"));
+delay.then(() => console.log("So will this one"));
+delay.then(() => console.log("And so will this one"));
+```
+
+You might say that a true promise clone will take the callback given the original `Promise` constructor and _call it again_. It is possible to do this with a forbidden technique. The technique is interesting, so I will show it.
+
+Create a map which maps promises to the callbacks passed to their constructor. Then monkeypatch the `Promise` constructor to save the callbacks in the map.
+
+```javascript
+const promiseMap = new WeakMap();
+
+const OriginalPromise = Promise;
+Promise = function(resolver) {
+    const promise = new OriginalPromise(resolver);
+    promiseMap.set(promise, resolver);
+    return promise;
+}
+Promise.prototype = OriginalPromise.prototype;
+```
+
+We can then clone promises in the following way:
+
+```javascript
+function clonePromise(promise) {
+    if (!map.has(promise)) return;
+    return new Promise(map.get(promise));
+}
+```
+
+Here is the result:
+
+```javascript
+const start = Date.now();
+
+const delay = delay(1000);
+delay.then(() => console.log(`original settled: ${Date.now() - start}`));
+
+setTimeout(() => {
+    const clone = clonePromise(delay);
+    clone.then(() => console.log(`clone settled: ${Date.now() - start}`));
+}, 500);
+
+// original settled: 1002
+// clone settled: 1506
+```
+
+With the original approach to cloning, the two promises would have settled at nearly the same time. But with the forbidden approach, the cloned delay waits for the full time before settling. It is a "true" clone.
+
+I strongly discourage monkeypatching native JavaScript functions. This risks making your codebase incompatible with future versions of JavaScript and it can cause unexpected problems in other packages, or in other places in your codebases. It is a massive code smell to alter native JavaScript functions for any reason other than polyfilling modern syntax for older browsers.
+
+Obviously, the latter approach is not in my cloning algorithm. I do clone Promises uses the original method, however.
+
 # So, how do we clone JavaScript objects?
 
 It not possible to properly clone every JavaScript object. If your object has `WeakMap`s or `WeakSet`s, then it cannot be done. If your object has functions which access their closure, then it is almost always impossible. If your object has a property whose property descriptor includes accessors, then it may also be impossible. Cloning the entire prototype chain is also rarely possible. Most objects inherit from `Object.prototype` which includes native functions. Native functions are impossible to clone.
@@ -261,6 +346,7 @@ If these limitations are too strict for your use case, then [my algorithm](https
  - The cloned object always shares its prototype with that of the original.
  - The algorithm uses no recursion.
  - My algorithm supports cloning instances of `Map`, `Set`, `TypeArray` subclasses, `ArrayBuffer`, `RegExp`, `Error`, `Date`, `Number`, `String`, `Boolean`, `Symbol` and `Object`.
+ - My algorithm "clones" `Promise`s by creating a new promise which settles when the original promise settles and resolves/rejects with the same value/reason as the original. 
  - My algorithm clones property descriptors, non-enumerable properties and retains the extensible, frozen and sealed status of objects.
  - My algorithm clones symbols and symbol properties.
  - My algorithm properly handles circular references.
