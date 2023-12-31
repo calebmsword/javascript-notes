@@ -277,7 +277,7 @@ delay.then(() => console.log("So will this one"));
 delay.then(() => console.log("And so will this one"));
 ```
 
-You might say that a true promise clone will take the callback given the original `Promise` constructor and _call it again_. It is possible to do this with a forbidden technique. The technique is interesting, so I will show it.
+You might say that a true promise clone will take the callback given the original `Promise` constructor and _call it again_. It is possible to do this with a forbidden technique.
 
 Create a map which maps promises to the callbacks passed to their constructor. Then monkeypatch the `Promise` constructor to save the callbacks in the map.
 
@@ -302,7 +302,7 @@ function clonePromise(promise) {
 }
 ```
 
-Here is the result:
+Here is the new approach to cloning Promises in action:
 
 ```javascript
 const start = Date.now();
@@ -319,11 +319,11 @@ setTimeout(() => {
 // clone settled: 1506
 ```
 
-With the original approach to cloning, the two promises would have settled at nearly the same time. But with the forbidden approach, the cloned delay waits for the full time before settling. It is a "true" clone.
+With the original approach to cloning, the two promises would have settled at nearly the same time. But with the forbidden approach, the cloned delay waits for another full 1000 ms before settling. It is a "true" clone. But not really. If the original resolver accesses or manipulates data in its closure, the new Promise will have a resolver that also accesses that data. Like always, closure makes it difficult to truly clone something.
 
-I strongly discourage monkeypatching native JavaScript functions. This risks making your codebase incompatible with future versions of JavaScript and it can cause unexpected problems in other packages, or in other places in your codebases. It is a massive code smell to alter native JavaScript functions for any reason other than polyfilling modern syntax for older browsers.
+I referred to this technique as "forbidden". That is because I strongly discourage monkeypatching native JavaScript functions. Doing so risks incompatibility with future versions of JavaScript and can cause unexpected problems in other packages, or in other places in your codebase. It is a noxious, maladorious, and putrid code smell to alter native JavaScript functions for any reason other than polyfilling modern syntax for older browsers.
 
-Obviously, the latter approach is not in my cloning algorithm. I do clone Promises uses the original method, however.
+Obviously, the latter approach is not in my cloning algorithm. Instead, I implemented the original technique.
 
 # So, how do we clone JavaScript objects?
 
