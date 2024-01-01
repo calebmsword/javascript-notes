@@ -4,11 +4,11 @@ I recently wanted to deep copy a JavaScript object. In the process, I discovered
 
 `structuredClone` is restrictive on what can be cloned because it employs the [structured clone algorithm](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm). You can find the official specification of the structured clone algorithm [here](https://html.spec.whatwg.org/multipage/structured-data.html#safe-passing-of-structured-data). The structured clone algorithm is used in many situations where an object is serialized or deserialized to some recipient. An example would be when `postMessage` is called in a Web Worker, which is used to send an object from the Web Worker to the main thread. Another example is when you use the IndexedDB API to save an object in storage. In short, the structured clone algorithm will only clone objects which can be safely serialized.
 
-Symbols cannot be safely serialized since creating one guarantees a unique value. For example, `Symbol("foo") === Symbol("foo")` is `false`. This means that if you save an object with a symbol in the IndexedDB API, close the JavaScript runtime so the symbol registry is emptied, and then start the runtime again and load the object, the returned object will contain a symbol with a different value. This is not a safe serialization.
+Symbols cannot be safely serialized since creating one guarantees a unique value. This means that if you save an object with a symbol in the IndexedDB API, close the JavaScript runtime so the symbol registry is emptied, and then start the runtime again and load the object, the returned object will contain a symbol with a different value. This is not a safe serialization.
 
-`structuredClone` will throw an error if you try to clone an object containing a symbol. It would be nice if there were a native solution which removes this restriction, as most cases for `structuredClone` won't involve serialization.
+`structuredClone` will throw an error if you try to clone an object containing a symbol. It would be nice if there were a native solution which removes this restriction as most use cases for `structuredClone` won't involve serialization.
 
-Immediately, we see the design flaw of `structuredClone`. It is not a function which deeply clones objects. It is solves a more specific problem: it deep clones objects **if they can be safely serialized**. The reason it was built this way was because it was easy. The structured clone algorithm specification, by coincidence, happened to deep clone serializable objects. Many JavaScript runtimes implemented a function to do this. It was realized that  it would be nice for the JavaScript community if this "deep clone function" was exposed.
+Immediately, we see the design flaw of `structuredClone`: it won't clone otherwise clonable objects **if they cannot be safely serialized**. The reason it was built this way was because it was easy. The structured clone algorithm specification happened to deep clone serializable objects. Many JavaScript runtimes implemented a function to do this. It was realized that it would be nice for the JavaScript community if this "deep clone function" was exposed.
 
 The problem is that they stopped there. It would have been nice if the committee which introduced `structuredClone` took the time to extend the functionality to solve a wider collection of use cases. Instead, we are given a function that cannot clone one of the basic primitive types in JavaScript.
 
@@ -137,14 +137,14 @@ There is a strange feature with `structuredClone`. It is because `structuredClon
 const map = new Map();
 Object.setPrototypeOf(map, Object.prototype);
 const clonedMap = structuredClone(map);
-console.log(Object.getPrototypeOf(map) === Map.prototype);  // true
+console.log(Object.getPrototypeOf(clonedMap) === Map.prototype);  // true
 ```
 
 The cloned object can have a different prototype than that of the original prototype, even if original object has a native prototype. I cannot tell whether this is a bug or a feature.
 
 ## deep clone and WeakMaps and WeakSets
 
-`WeakMap`s and `WeakSet`s should not be cloned. `WeakMap`s and `WeakSet`s contain weak references to the objects given to them, meaning that the object can still get garbage collected in the future. Suppose we tried to clone the data in a `WeakMap` and one of its objects is about to get garbage-collected. Should the clone have a reference to this objecct? Should it ignore it? Whatever the answer should be, we cannot know if something will be garbage-collected anyway since the JavaScript specification does not expose this information.
+`WeakMap`s and `WeakSet`s should not be cloned. `WeakMap`s and `WeakSet`s contain weak references to the objects given to them, meaning that the object can still get garbage collected in the future. Suppose we tried to clone the data in a `WeakMap` and one of its objects is about to get garbage-collected. Should the clone have a reference to this object? Should it ignore it? Whatever the answer should be, we cannot know if something will be garbage-collected anyway since the JavaScript specification does not expose this information.
 
 `structuredClone` throws if you try to clone `WeakMap`s or `WeakSet`s. This is one of the few restrictions of `structuredClone` this is correct for the general use case. It is not possible to clone `WeakMap`s or `WeakSet`s anyway because they do not provide methods for iterating over all of their data.
 
