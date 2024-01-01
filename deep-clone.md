@@ -297,7 +297,7 @@ We can then clone promises in the following way:
 
 ```javascript
 function clonePromise(promise) {
-    if (!map.has(promise)) return;
+    if (!promiseMap.has(promise)) return;
     return new Promise(map.get(promise));
 }
 ```
@@ -321,7 +321,7 @@ setTimeout(() => {
 
 With the original approach to cloning, the two promises would have settled at nearly the same time. But with the forbidden approach, the cloned delay waits for another full 1000 ms before settling. It is a "true" clone. But not really. If the original resolver accesses or manipulates data in its closure, the new Promise will have a resolver that also accesses that data. Like always, closure makes it difficult to truly clone something.
 
-I referred to this technique as "forbidden". That is because I strongly discourage monkeypatching native JavaScript functions. Doing so risks incompatibility with future versions of JavaScript and can cause unexpected problems in other packages, or in other places in your codebase. It is a noxious, maladorious, and putrid code smell to alter native JavaScript functions for any reason other than polyfilling modern syntax for older browsers.
+I referred to this technique as "forbidden". That is because I strongly discourage monkeypatching native JavaScript functions. Doing so risks incompatibility with future versions of JavaScript and can cause unexpected problems in other packages, or in other places in your codebase. It is a severe code smell to alter native JavaScript functions for any reason other than polyfilling modern syntax for older browsers.
 
 Obviously, the latter approach is not in my cloning algorithm. Instead, I implemented the original technique.
 
