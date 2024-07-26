@@ -80,11 +80,30 @@ function isMap(object) {
 }
 ```
 
-This technique is quite good. Unfortunately, it is also fallible. For example, the user could overwrite `Map.prototype.has` to throw errors when it shouldn't. 
+Note that this technique will not work for native classes which do not have methods. The only examples of this I am aware of are the `TypedArray` subclasses since those classes inherit all of their methods from the `TypedArray` prototype. It is possible, however, to check if something is a `TypedArray` subclass with something like the following:
+
+```javascript
+const proto = Object.getPrototypeOf;
+
+// any TypedArray subclass will work, you don't have to use Float32Array
+const TypedArrayProto = proto(proto(new Float32Array(new ArrayBuffer(0))));
+
+function isTypedArray(object) {
+  try {
+    TypedArrayProto.lastIndexOf.call(object);
+    return true;
+  }
+  catch(error) {
+    return false;
+  }
+}
+```
+
+This technique is very good and has become my preferred method for checking for native classes at runtime. Strictly speaking, this technique is still fallible because one can arbitrarily monkeypatch the methods on prototypes for any native class. Although if this ever happens, you probably have a larger issue on your hands.   
 
 # structuredClone
 
-This is the hackiest hack in this document.
+This technique is a curiousity and isn't something I would ever do in serious code, but I will still include because it is interesting.
 
 `structuredClone` is a native JavaScript global function which deeply-clones objects. The prototype chain of the object is not cloned. Instead, if the object was created using the constructor function for any of its [supported classes](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm#supported_types), the cloned object receives the prototype of the constructor function which created the object.
 
@@ -112,7 +131,7 @@ function wasConstructedBy(object, constructor) {
 }
 ```
 
-This is quite a good technique. However, `structuredClone` can be monkeypatched arbitrarily, so it is not foolproof. `structuredClone` can also be an expensive operation if the cloned object has many properties or is deepy nested.
+This is a fallible technique. `structuredClone` can be monkeypatched arbitrarily, and `structuredClone` will also throw if the object contains methods or symbols. Furthermore, `structuredClone` can be an expensive operation if the cloned object has many properties or is deeply nested.
 
 # The One True Type Check
 
@@ -141,57 +160,36 @@ export default myObjectFactory;
 
 If we do not export the registry from this module, it is safely encapsulated. Then `isMyObject` is a foolproof way to check if an object was created from the `getMyObject` factory.
 
-I have already found myself using this pattern multiple times. It has reached the point where I have created a function which transforms a factory into a type-checkable factory:
+If you would like to use ES6 classes, then you can use the following function to turn subclass any ES6 class into one that has a static method which can type-check objects.
 
 ```javascript
-function getTypeCheckableFactory(factory) {
-    const registry = WeakSet();
-    return Object.freeze({
-        create(...args) {
-            const result = factory(..args);
-            registry.add(result);
-            return result;
-        },
-        has(candidate) {
+const makeRegistrable = Class => {
+    const registry = new WeakSet();
+    
+    return class extends Class {
+        constructor(...args) {
+            super(...args);
+            registry.add(this);
+        }
+
+        static [`is${Class.name}`](candidate) {
             return registry.has(candidate);
         }
-    });
+    };
 }
 ```
 
-Here is an example of its usage:
+For example,
 
 ```javascript
-import getTypeCheckableFactory from "./utils";
+const MyClass = makeRegistrable(class MyClass {});
 
-const wrapperFactory = getTypeCheckableFactory(() => {
-    let value;
-    return {
-      get() {
-          return value;
-      }
-      set(newValue) {
-        value = newValue;
-      }
-    }
-});
-
-const wrapper = wrapperFactory.create();
-wrapper.set({ foo: "bar" });
-console.log(wrapper.get());  // { foo: "bar" }
-console.log(wrapperFactory.has(wrapper));  // true
+const myClass = new MyClass(");
+MyClass.isMyClass(myClass);  // true
+MyClass.isMyClass({});  // false
 ```
 
-This can be easily used with ES6 classes.
-
-```javascript
-import getTypeCheckableFactory from "./utils";
-import MyClass from "./my-class";
-
-const MyClassFactory = getTypeCheckableFactory((...args) => new MyClass(...args));
-```
-
-The object returned by `getTypeCheckableFactory` is frozen so its methods cannot be changed. If we assign the object to a constant variable, we can trust that the factory object will always have the expected behavior. The technique is foolproof. 
+If you are familiar with TypeScript decorators, then I leave it is an exercise to create an object decorator which behaves like `makeRegistrable`. Also, do you understand why I used a `WeakSet` instead of a normal `Set`?
 
 # Summary
 
