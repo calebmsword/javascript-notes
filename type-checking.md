@@ -143,7 +143,7 @@ The only secure method I am aware of can be performed with factories. For exampl
 const registry = new WeakSet();
 
 const getMyObject = () => {
-  myObject = Object.freeze({ foo: "bar" });
+  myObject = { foo: "bar" };
   registry.add(myObject);
   return myObject;
 }
@@ -166,7 +166,7 @@ If you would like to use ES6 classes, then you can use the following function to
 const makeRegistrable = Class => {
     const registry = new WeakSet();
     
-    return class extends Class {
+    class Registrable extends Class {
         constructor(...args) {
             super(...args);
             registry.add(this);
@@ -176,6 +176,10 @@ const makeRegistrable = Class => {
             return registry.has(candidate);
         }
     };
+
+    Object.freeze(Registrable);
+    Object.freeze(Registrable.prototype);
+    return Registrable;
 }
 ```
 
@@ -184,8 +188,7 @@ For example,
 ```javascript
 const MyClass = makeRegistrable(class MyClass {});
 
-const myClass = new MyClass(");
-MyClass.isMyClass(myClass);  // true
+MyClass.isMyClass(new MyClass());  // true
 MyClass.isMyClass({});  // false
 ```
 
