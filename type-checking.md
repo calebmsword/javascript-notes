@@ -160,7 +160,7 @@ export default myObjectFactory;
 
 If we do not export the registry from this module, it is safely encapsulated. Then `isMyObject` is a foolproof way to check if an object was created from the `getMyObject` factory.
 
-Of course, ES6 classes really are just object factories since they are syntantic sugar for constructor functions. It is no surprise, then, that this technique can be extended to them. For example, you can use the following function to turn subclass any ES6 class into one that has a static method which check if an object was created by the constructor function for the class.
+Of course, ES6 classes really are just object factories since they are syntantic sugar for constructor functions. It is no surprise, then, that this technique can be extended to them. For example, you can use the following function to subclass any ES6 class into one that has a static method which checks if an object was created by the constructor function for the class.
 
 ```javascript
 const makeRegistrable = Class => {
