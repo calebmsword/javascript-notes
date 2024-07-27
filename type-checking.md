@@ -160,7 +160,7 @@ export default myObjectFactory;
 
 If we do not export the registry from this module, it is safely encapsulated. Then `isMyObject` is a foolproof way to check if an object was created from the `getMyObject` factory.
 
-If you would like to use ES6 classes, then you can use the following function to turn subclass any ES6 class into one that has a static method which can type-check objects.
+Of course, ES6 classes really are just object factories since they are syntantic sugar for constructor functions. It is no surprise, then, that this technique can be extended to them. For example, you can use the following function to turn subclass any ES6 class into one that has a static method which can type-check objects.
 
 ```javascript
 const makeRegistrable = Class => {
@@ -192,7 +192,7 @@ MyClass.isMyClass(new MyClass());  // true
 MyClass.isMyClass({});  // false
 ```
 
-If you are familiar with TypeScript decorators, then I leave it is an exercise to create an object decorator which behaves like `makeRegistrable`. Also, do you understand why I used a `WeakSet` instead of a normal `Set`?
+If you are familiar with TypeScript decorators, then I leave it is an exercise to create a class decorator which behaves like `makeRegistrable`. Also, do you understand why I used a `WeakSet` instead of a normal `Set`?
 
 # Summary
 
