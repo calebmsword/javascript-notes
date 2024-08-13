@@ -6,19 +6,47 @@ Also, keep in mind when I say that a JavaScript object is an instance of the cla
 
 The `instanceof` operator takes two arguments like so: `foo instanceof Bar`. `foo` can be any object, and `Bar` must be a suitable constructor function. By default, `instanceof` crawls through `foo`'s prototype chain and returns true if it contains `Bar.prototype`. An error is thrown if `Bar` is not a suitable constructor function.
 
-However, this behavior can be configured. JavaScript looks for the `Symbol.hasInstance` property on the constructor and uses the method associated with it. `Function.prototype`, by default, has a non-configurable, non-writeable `Symbol.hasInstance` that performs the behavior described in the previous paragraph. To add a new value for `Symbol.hasInstance` on a constructor function, you cannot use simple assignment. You have to use `Object.defineProperty`:
+However, this behavior can be configured. JavaScript looks for the `Symbol.hasInstance` property on the constructor and uses the method associated with it. In many runtimes, `Function.prototype` has a non-configurable, non-writeable `Symbol.hasInstance` that performs the behavior described in the previous paragraph. To add a new value for `Symbol.hasInstance` on a constructor function, you cannot use simple assignment. You have to use `Object.defineProperty`:
 
 ```javascript
-Bar[Symbol.hasInstance] = newFunction;  // this throws
+Bar[Symbol.hasInstance] = newFunction; // this has no effect
 
 Object.defineProperty(Bar, Symbol.hasInstance, {
-  value: newFunction
-});  // this works
+  value: () => false
+});  // this has an effect
+
+console.log(new Bar() instanceof Bar); // false
 ```
 
 Any instance of a native JavaScript class can customize the behavior of `instanceof` during runtime meaning that `instanceof` can be unpredictable.
 
-The default behavior of the `instanceof` operator is often not preferable anyway. Usually, given some `object` and a `Constructor`, we want the more specific check `Object.getPrototypeOf(object) === Constructor.prototype` instead of knowing if the prototype is somewhere in the prototype chain. 
+However, the ECMAScript specification requires that, if a constructor function has the value `undefined` for the property `Symbol.hasInstance`, the return value of `obj instanceof Class` should represent whether `obj` has `Class.prototype` in its prototype chain. We can exploit this behavior with the following hack to create a "safe" version of `instanceof` that always performs the default behavior:
+
+```javascript
+const isInstance = (object, constructor) => {
+    const MockConstructor = function() {};
+    MockConstructor.prototype = constructor.prototype;
+    Object.defineProperty(MockConstructor, Symbol.hasInstance, {
+        value: undefined
+    });
+    return object instanceof MockConstructor;
+};
+```
+
+Then, for example:
+
+```javascript
+class Bar {};
+
+Object.defineProperty(Bar, Symbol.hasInstance, {
+  value: () => false
+});
+
+console.log(new Bar() instanceof Bar); // false
+console.log(isInstance(new Bar(), Bar)); // true
+```
+
+However, the default behavior of the `instanceof` operator is often not desired anyway. Usually, given some `object` and a `Constructor`, we the more specific check that was an object was made using a constructor function. This is a significant distinction, as constructor functions can have data in their closures that affects how instances behave. 
 
 # `Object.prototype.toString.call`
 
@@ -66,15 +94,14 @@ Date.prototype.getDay.call(actualDate);
 Date.prototype.getDay.call(fakeDate);  // throws
 ```
 
-`Map`, `Set`, `Array`, and most other native JavaScript classes have similar behavior. Following the previous example, we could create a function like the following to check if an object was a `Map` instance:
+`Map`, `Set`, and most other native JavaScript classes have similar behavior. This is, in fact, behavior required by the ECMAScript specification for the vast majority of methods for native classes. Then following the previous example, we could create a function like the following to check if an object was a `Map` instance:
 
 ```javascript
 function isMap(object) {
   try {
     Map.prototype.has.call(object);
     return true;
-  }
-  catch(error) {
+  } catch {
     return false;
   }
 }
@@ -92,8 +119,7 @@ function isTypedArray(object) {
   try {
     TypedArrayProto.lastIndexOf.call(object);
     return true;
-  }
-  catch(error) {
+  } catch {
     return false;
   }
 }
