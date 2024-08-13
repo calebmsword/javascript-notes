@@ -46,13 +46,25 @@ console.log(new Bar() instanceof Bar); // false
 console.log(isInstance(new Bar(), Bar)); // true
 ```
 
-However, the default behavior of the `instanceof` operator is often not desired anyway. Usually, given some `object` and a `Constructor`, we the more specific check that was an object was made using a constructor function. This is a significant distinction, as constructor functions can have data in their closures that affects how instances behave. 
+However, the default behavior of the `instanceof` operator is often not desired anyway. Usually, given some `object` and a `Constructor`, we the more specific check that was an object was made using a constructor function. This is a significant distinction, as instance objects can have access through their closure to private variables that were declared in the constructor function. 
 
 # `Object.prototype.toString.call`
 
 Try using this function on various objects. The result probably looks something like `"[object Object]"`. If you create an instance of a `Date`, you get `"[object Date]"`.
 
-This is a popular tool for type-checking native JavaScript classes because the specification requires that `Object.prototype.toString` return specific string values if `this` is bound to any of a particular collection of native JavaScript class instances. These classes are `Array`, `Function`, `Error`, `Boolean`, `Number`, `String`, `Date`, `RegExp`, `Object`, and the class whose instances are the `arguments` objects implicitly passed to functions. Then, for example, we could use `Object.prototype.toString.call(myObject) === "[object Array]"` to test if `myObject` were an array, or `Object.prototype.toString.call(myObject) === "[object Date]"` to check if `myObject` were a date, etc. If we want to check if an object is an `arguments` object, then we do `Object.prototype.toString.call(myObject) === "[object Arguments]"`. 
+This is a popular tool for type-checking native JavaScript classes because the specification requires that `Object.prototype.toString` return specific string values if `this` is bound to any of a particular collection of native JavaScript class instances. These classes are:
+ - `Array`
+ - `Function`
+ - `Error`
+ - `Boolean`
+ - `Number`
+ - `String`
+ - `Date`
+ - `RegExp`
+ - `Object`
+ - the class whose instances are the `arguments` objects implicitly passed to functions.
+
+Then, for example, we could use `Object.prototype.toString.call(myObject) === "[object Array]"` to test if `myObject` were an array, or `Object.prototype.toString.call(myObject) === "[object Date]"` to check if `myObject` were a date, etc. If we want to check if an object is an `arguments` object, then we do `Object.prototype.toString.call(myObject) === "[object Arguments]"`. 
 
 The default behavior of the `instanceof` operator will not correctly recognize the constructor which made an object if that object has its prototype dynamically changed before the `instanceof` operator is used. However, `Object.prototype.toString.call` does not use the prototype of the object to determine the string output. For example,
 
